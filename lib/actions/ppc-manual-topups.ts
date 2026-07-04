@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getSession } from "@/lib/session";
-import { CANONICAL_SLOTS, MAX_SLOT_AMOUNT, todaySgt } from "@/lib/ppc-daily-cap-constants";
+import { CANONICAL_SLOTS, MAX_SLOT_AMOUNT, todaySgt, currentSlotSgt } from "@/lib/ppc-daily-cap-constants";
 import { assertCountryExists, getStaffId } from "@/lib/actions/ppc-daily-cap";
 
 export interface ManualTopUp {
@@ -63,6 +63,9 @@ export async function createManualTopUp(
   if (targetDate < todaySgt()) {
     return { data: null, error: "Target date can't be in the past" };
   }
+  if (targetDate === todaySgt() && slotTime <= currentSlotSgt()) {
+    return { data: null, error: "That slot isn't in the future anymore" };
+  }
 
   const existsError = await assertCountryExists(countryCode);
   if (existsError) return { data: null, error: existsError };
@@ -105,6 +108,23 @@ export async function cancelManualTopUp(
   if (error) return { data: null, error };
 
   const service = createServiceClient();
+
+  const { data: existing, error: fetchError } = await service
+    .from("ppc_manual_topups")
+    .select("target_date, slot_time, status")
+    .eq("id", id)
+    .maybeSingle();
+  if (fetchError) return { data: null, error: fetchError.message };
+  if (!existing) return { data: null, error: "Top-up not found" };
+  if (existing.status !== "pending") {
+    return { data: null, error: "Only pending top-ups can be cancelled." };
+  }
+  const today = todaySgt();
+  const isFuture = existing.target_date > today || (existing.target_date === today && existing.slot_time > currentSlotSgt());
+  if (!isFuture) {
+    return { data: null, error: "This slot has already started — it can no longer be cancelled." };
+  }
+
   const { data, error: deleteError } = await service
     .from("ppc_manual_topups")
     .delete()

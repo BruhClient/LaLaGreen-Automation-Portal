@@ -64,9 +64,11 @@ export async function getDailyCapConfig(): Promise<{
 }
 
 export async function getAuditLog(
-  countryCode?: string,
-  limit = 50
-): Promise<{ data: AuditRow[] | null; error: string | null }> {
+  countryCode: string,
+  limit = 25,
+  offset = 0,
+  date?: string
+): Promise<{ data: { rows: AuditRow[]; hasMore: boolean } | null; error: string | null }> {
   const { error } = await requireStaff();
   if (error) return { data: null, error };
 
@@ -74,13 +76,22 @@ export async function getAuditLog(
   let query = client
     .from("ppc_topup_audit_log")
     .select("id, country_code, slot_time, field_name, old_value, new_value, changed_by_username, created_at")
+    .eq("country_code", countryCode)
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .order("id", { ascending: false })
+    .range(offset, offset + limit);
 
-  if (countryCode) query = query.eq("country_code", countryCode);
+  if (date) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { data: null, error: `Invalid date: ${date}` };
+    const dayStart = new Date(`${date}T00:00:00+08:00`);
+    const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+    query = query.gte("created_at", dayStart.toISOString()).lt("created_at", dayEnd.toISOString());
+  }
 
   const { data, error: dbError } = await query;
-  return { data, error: dbError?.message ?? null };
+  if (dbError) return { data: null, error: dbError.message };
+  const rows = data ?? [];
+  return { data: { rows: rows.slice(0, limit), hasMore: rows.length > limit }, error: null };
 }
 
 export async function getStaffId(username: string): Promise<string | null> {

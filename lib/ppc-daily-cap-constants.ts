@@ -41,7 +41,7 @@ export function todaySgt(): string {
   return nowSgt().toISOString().slice(0, 10);
 }
 
-function shiftDateSgt(dateStr: string, days: number): string {
+export function shiftDateSgt(dateStr: string, days: number): string {
   const [y, m, d] = dateStr.split("-").map(Number);
   return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
 }
