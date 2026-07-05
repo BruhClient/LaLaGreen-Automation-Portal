@@ -6,6 +6,7 @@ import { Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
   CardHeader,
@@ -526,11 +527,9 @@ function LiveProjectionCard({
         </CardDescription>
         <CardAction className="col-start-1! row-start-3! row-span-1! justify-self-stretch! flex flex-wrap items-center gap-3 sm:col-start-2! sm:row-start-1! sm:row-span-2! sm:justify-self-end!">
           <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={includeManualTopUps}
-              onChange={(e) => setIncludeManualTopUps(e.target.checked)}
-              className="h-3.5 w-3.5 rounded border-input"
+              onCheckedChange={setIncludeManualTopUps}
             />
             Include manual top-ups
           </label>
