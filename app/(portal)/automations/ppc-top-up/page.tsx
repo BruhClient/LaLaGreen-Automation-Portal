@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { CartesianGrid, Line, LineChart, ReferenceLine, XAxis, YAxis } from "recharts";
-import { History, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
@@ -34,10 +34,8 @@ import {
   getDailyCapConfig,
   updateCountrySettings,
   updateScheduleSlots,
-  getAuditLog,
   type CountryConfig,
   type ScheduleRow,
-  type AuditRow,
 } from "@/lib/actions/ppc-daily-cap";
 import {
   listManualTopUps,
@@ -88,31 +86,6 @@ function isManualTopUpFuture(t: Pick<ManualTopUp, "target_date" | "slot_time">):
   return t.target_date > todaySgt() || (t.target_date === todaySgt() && t.slot_time > currentSlotSgt());
 }
 
-const AUDIT_PAGE_SIZE = 25;
-
-function formatAuditRow(row: AuditRow): string {
-  if (row.field_name === "amount") {
-    const oldAmount = Number(row.old_value ?? 0).toFixed(2);
-    const newAmount = Number(row.new_value ?? 0).toFixed(2);
-    return `${row.slot_time} — Amount $${oldAmount} → $${newAmount}`;
-  }
-  if (row.field_name === "enabled") {
-    return row.new_value === "true" ? "Marketplace enabled" : "Marketplace disabled";
-  }
-  if (row.field_name === "reset_time") {
-    return `Reset time ${row.old_value} → ${row.new_value}`;
-  }
-  return `${row.field_name}: ${row.old_value} → ${row.new_value}`;
-}
-
-function formatAuditTimestamp(iso: string): string {
-  return new Date(iso).toLocaleString("en-SG", {
-    timeZone: "Asia/Singapore",
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-}
-
 export default function PpcTopUpPage() {
   const [countries, setCountries] = useState<CountryConfig[]>([]);
   const [schedule, setSchedule] = useState<ScheduleRow[]>([]);
@@ -126,70 +99,6 @@ export default function PpcTopUpPage() {
   const [isPending, startTransition] = useTransition();
   const [, startManualTransition] = useTransition();
   const [showAiImport, setShowAiImport] = useState(false);
-  const [auditLogCountry, setAuditLogCountry] = useState<string | null>(null);
-  const [auditDayOffset, setAuditDayOffsetState] = useState(0);
-  const [auditRows, setAuditRows] = useState<AuditRow[]>([]);
-  const [auditHasMore, setAuditHasMore] = useState(false);
-  const [auditLoading, setAuditLoading] = useState(false);
-  const [auditLoadingMore, setAuditLoadingMore] = useState(false);
-  const [auditError, setAuditError] = useState<string | null>(null);
-  const auditLoadingMoreRef = useRef(false);
-  const [, startAuditTransition] = useTransition();
-
-  function openAuditLog(countryCode: string) {
-    setAuditLogCountry(countryCode);
-    setAuditDayOffsetState(0);
-    setAuditRows([]);
-    setAuditHasMore(false);
-    setAuditError(null);
-    setAuditLoading(true);
-    startAuditTransition(async () => {
-      const { data, error } = await getAuditLog(countryCode, AUDIT_PAGE_SIZE, 0, todaySgt());
-      if (error) setAuditError(error);
-      else if (data) {
-        setAuditRows(data.rows);
-        setAuditHasMore(data.hasMore);
-      }
-      setAuditLoading(false);
-    });
-  }
-
-  function setAuditDayOffset(offset: number) {
-    if (!auditLogCountry) return;
-    const clamped = Math.max(-5, Math.min(5, offset));
-    setAuditDayOffsetState(clamped);
-    setAuditRows([]);
-    setAuditHasMore(false);
-    setAuditError(null);
-    setAuditLoading(true);
-    const date = shiftDateSgt(todaySgt(), clamped);
-    startAuditTransition(async () => {
-      const { data, error } = await getAuditLog(auditLogCountry, AUDIT_PAGE_SIZE, 0, date);
-      if (error) setAuditError(error);
-      else if (data) {
-        setAuditRows(data.rows);
-        setAuditHasMore(data.hasMore);
-      }
-      setAuditLoading(false);
-    });
-  }
-
-  function loadMoreAuditRows() {
-    if (!auditLogCountry || auditLoadingMoreRef.current || !auditHasMore) return;
-    auditLoadingMoreRef.current = true;
-    setAuditLoadingMore(true);
-    const date = shiftDateSgt(todaySgt(), auditDayOffset);
-    startAuditTransition(async () => {
-      const { data, error } = await getAuditLog(auditLogCountry, AUDIT_PAGE_SIZE, auditRows.length, date);
-      if (error) setAuditError(error);
-      else if (data) {
-        setAuditRows((prev) => [...prev, ...data.rows]);
-        setAuditHasMore(data.hasMore);
-      }
-      setAuditLoadingMore(false);
-      auditLoadingMoreRef.current = false;
-    });
-  }
 
   function reload() {
     startTransition(async () => {
@@ -313,7 +222,7 @@ export default function PpcTopUpPage() {
         )}
 
         {!isLoading && countries.length > 0 && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <label htmlFor="marketplace-select" className="text-sm font-medium text-muted-foreground">
               Marketplace
             </label>
@@ -385,19 +294,12 @@ export default function PpcTopUpPage() {
                 />
 
                 <Card>
-                    <CardHeader>
+                    <CardHeader className="grid-cols-1! sm:grid-cols-[1fr_auto]!">
                       <CardTitle>{country.country_code}</CardTitle>
                       <CardDescription>
                         Amazon Sponsored Products daily budget cap
                       </CardDescription>
-                      <CardAction className="flex items-center gap-2">
-                        <button
-                          onClick={() => openAuditLog(country.country_code)}
-                          className="flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium hover:bg-accent"
-                        >
-                          <History className="size-3.5" />
-                          Updates Log
-                        </button>
+                      <CardAction className="col-start-1! row-start-3! row-span-1! justify-self-stretch! flex flex-wrap items-center gap-2 sm:col-start-2! sm:row-start-1! sm:row-span-2! sm:justify-self-end!">
                         <button
                           onClick={() => setShowAiImport(true)}
                           disabled
@@ -424,7 +326,7 @@ export default function PpcTopUpPage() {
                     </CardHeader>
 
                     <CardContent>
-                      <div className="max-h-140 overflow-y-auto rounded-md border border-border">
+                      <div className="max-h-140 overflow-x-auto overflow-y-auto rounded-md border border-border">
                         <table className="w-full text-sm">
                           <thead className="sticky top-0 bg-muted/80 backdrop-blur">
                             <tr className="border-b border-border">
@@ -492,7 +394,7 @@ export default function PpcTopUpPage() {
                       </div>
                     </CardContent>
 
-                    <CardFooter className="flex items-center justify-between gap-3">
+                    <CardFooter className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         <span>
                           Max daily cap: <strong className="text-foreground">${maxCap.toFixed(2)}</strong>
@@ -531,21 +433,6 @@ export default function PpcTopUpPage() {
                     countryCodes.forEach((cc) => discard(cc));
                     reload();
                   }}
-                />
-
-                <AuditLogDialog
-                  open={auditLogCountry !== null}
-                  dayOffset={auditDayOffset}
-                  onDayOffsetChange={setAuditDayOffset}
-                  rows={auditRows}
-                  hasMore={auditHasMore}
-                  isLoading={auditLoading}
-                  isLoadingMore={auditLoadingMore}
-                  error={auditError}
-                  onOpenChange={(next) => {
-                    if (!next) setAuditLogCountry(null);
-                  }}
-                  onLoadMore={loadMoreAuditRows}
                 />
                 </div>
               );
@@ -632,12 +519,12 @@ function LiveProjectionCard({
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="grid-cols-1! sm:grid-cols-[1fr_auto]!">
         <CardTitle>Live Projection</CardTitle>
         <CardDescription>
           {pmDate} → {amDate}
         </CardDescription>
-        <CardAction className="flex items-center gap-3">
+        <CardAction className="col-start-1! row-start-3! row-span-1! justify-self-stretch! flex flex-wrap items-center gap-3 sm:col-start-2! sm:row-start-1! sm:row-span-2! sm:justify-self-end!">
           <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
             <input
               type="checkbox"
@@ -760,7 +647,7 @@ function LiveProjectionCard({
         </div>
         )}
 
-        <div className="rounded-md border border-border">
+        <div className="overflow-x-auto rounded-md border border-border">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/50">
@@ -1001,7 +888,7 @@ function AiImportDialog({
                 diffsByCountry.map(({ countryCode, rows, netChange }) => (
                   <div key={countryCode} className="space-y-1.5">
                     <h3 className="text-sm font-medium">{countryCode}</h3>
-                    <div className="rounded-md border border-border">
+                    <div className="overflow-x-auto rounded-md border border-border">
                       <table className="w-full text-xs">
                         <thead>
                           <tr className="border-b border-border bg-muted/50">
@@ -1040,7 +927,7 @@ function AiImportDialog({
           )}
         </div>
 
-        <SheetFooter className="flex-row justify-end gap-2">
+        <SheetFooter className="flex-row flex-wrap justify-end gap-2">
           {proposedCountries && (
             <button
               onClick={() => {
@@ -1073,7 +960,7 @@ function AiImportDialog({
             Every amount is parsed straight from the cells below and snapped to the nearest 10-minute slot —
             Claude is only used to locate columns when a sheet can&apos;t be read directly, never to retype values.
           </p>
-          <div className="max-h-96 overflow-y-auto rounded-md border border-border">
+          <div className="max-h-96 overflow-x-auto overflow-y-auto rounded-md border border-border">
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-muted/80 backdrop-blur">
                 <tr className="border-b border-border">
@@ -1125,126 +1012,5 @@ function AiImportDialog({
       </div>
     )}
     </>
-  );
-}
-
-function AuditLogDialog({
-  open,
-  onOpenChange,
-  dayOffset,
-  onDayOffsetChange,
-  rows,
-  hasMore,
-  isLoading,
-  isLoadingMore,
-  error,
-  onLoadMore,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  dayOffset: number;
-  onDayOffsetChange: (offset: number) => void;
-  rows: AuditRow[];
-  hasMore: boolean;
-  isLoading: boolean;
-  isLoadingMore: boolean;
-  error: string | null;
-  onLoadMore: () => void;
-}) {
-  const dateLabel = shiftDateSgt(todaySgt(), dayOffset);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const sentinelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const el = sentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) onLoadMore();
-      },
-      { root: scrollContainerRef.current, threshold: 0 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [open, onLoadMore]);
-
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex flex-col sm:max-w-lg">
-        <SheetHeader>
-          <SheetTitle>Daily Budget Cap Updates Log</SheetTitle>
-          <SheetDescription>Every schedule, reset-time, and enable/disable change for this marketplace.</SheetDescription>
-        </SheetHeader>
-
-        <div className="flex items-center gap-2 px-4">
-          <button
-            onClick={() => onDayOffsetChange(Math.max(dayOffset - 1, -5))}
-            disabled={dayOffset <= -5}
-            className="rounded-md px-2 py-1 text-xs font-medium hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-            title="Previous day"
-          >
-            ←
-          </button>
-          <button
-            onClick={() => dayOffset !== 0 && onDayOffsetChange(0)}
-            disabled={dayOffset === 0}
-            title={dayOffset === 0 ? undefined : "Jump to today"}
-            className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors disabled:cursor-default ${
-              dayOffset === 0
-                ? "bg-primary/10 text-primary"
-                : "bg-muted text-muted-foreground hover:bg-muted/70"
-            }`}
-          >
-            {relativeDayLabel(dayOffset)}
-          </button>
-          <button
-            onClick={() => onDayOffsetChange(Math.min(dayOffset + 1, 5))}
-            disabled={dayOffset >= 5}
-            className="rounded-md px-2 py-1 text-xs font-medium hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-            title="Next day"
-          >
-            →
-          </button>
-          <span className="text-xs text-muted-foreground">{dateLabel}</span>
-        </div>
-
-        <div ref={scrollContainerRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4">
-          {error && (
-            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-
-          {isLoading ? (
-            <div className="space-y-2">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 w-full" />
-              ))}
-            </div>
-          ) : rows.length === 0 && !error ? (
-            <p className="text-sm text-muted-foreground">
-              No updates on this date.
-            </p>
-          ) : (
-            <>
-              {rows.map((row) => (
-                <div key={row.id} className="rounded-md border border-border px-3 py-2 text-sm">
-                  <p>{formatAuditRow(row)}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {row.changed_by_username} · {formatAuditTimestamp(row.created_at)}
-                  </p>
-                </div>
-              ))}
-              {hasMore && (
-                <div ref={sentinelRef} className="py-2 text-center text-xs text-muted-foreground">
-                  {isLoadingMore ? "Loading more…" : ""}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </SheetContent>
-    </Sheet>
   );
 }
