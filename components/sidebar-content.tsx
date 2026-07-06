@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { LayoutGrid, Users, Users2 } from "lucide-react";
 import { projects } from "@/lib/projects";
 import { tools } from "@/lib/tools";
+import { configurationItems } from "@/lib/configuration";
 import { cn } from "@/lib/utils";
 import { UserMenu } from "@/components/user-menu";
 
@@ -82,6 +83,24 @@ export function SidebarContent({
             >
               <Icon className="size-4 shrink-0" />
               <span className="flex-1 truncate">{tool.name}</span>
+            </Link>
+          );
+        })}
+
+        <p className="px-3 pt-4 pb-1 text-xs font-medium text-muted-foreground">
+          Configuration
+        </p>
+
+        {configurationItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.id}
+              href={item.href}
+              className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-accent"
+            >
+              <Icon className="size-4 shrink-0" />
+              <span className="flex-1 truncate">{item.name}</span>
             </Link>
           );
         })}
