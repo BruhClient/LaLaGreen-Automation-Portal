@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutGrid, Users, Users2 } from "lucide-react";
 import { projects } from "@/lib/projects";
+import { tools } from "@/lib/tools";
 import { cn } from "@/lib/utils";
 import { UserMenu } from "@/components/user-menu";
 
@@ -63,6 +64,24 @@ export function SidebarContent({
             >
               <Icon className="size-4 shrink-0" />
               <span className="flex-1 truncate">{project.name}</span>
+            </Link>
+          );
+        })}
+
+        <p className="px-3 pt-4 pb-1 text-xs font-medium text-muted-foreground">
+          Tools
+        </p>
+
+        {tools.map((tool) => {
+          const Icon = tool.icon;
+          return (
+            <Link
+              key={tool.id}
+              href={tool.href}
+              className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-accent"
+            >
+              <Icon className="size-4 shrink-0" />
+              <span className="flex-1 truncate">{tool.name}</span>
             </Link>
           );
         })}

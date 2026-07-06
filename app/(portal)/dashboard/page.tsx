@@ -1,13 +1,7 @@
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
-import { projects } from "@/lib/projects";
+import { ppcTopUp } from "@/lib/projects";
 import { getSession } from "@/lib/session";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import PpcTopUpCharts from "@/components/ppc-top-up-chart";
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -22,30 +16,14 @@ export default async function DashboardPage() {
         Here&apos;s an overview of your automations.
       </p>
 
-      <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {projects.map((project) => {
-          const Icon = project.icon;
-          return (
-            <Link key={project.id} href={project.href} className="group">
-              <Card className="h-full border-border p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
-                <CardHeader className="gap-3 px-0">
-                  <div className="flex items-start justify-between">
-                    <div className="flex size-11 items-center justify-center rounded-xl bg-accent transition-colors group-hover:bg-primary/15">
-                      <Icon className="size-5 text-primary" />
-                    </div>
-                    <ArrowUpRight className="size-4 text-muted-foreground opacity-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary group-hover:opacity-100" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-base">{project.name}</CardTitle>
-                    <CardDescription className="mt-1">
-                      {project.description}
-                    </CardDescription>
-                  </div>
-                </CardHeader>
-              </Card>
-            </Link>
-          );
-        })}
+      <div className="mt-8 flex items-center justify-between">
+        <h3 className="text-sm font-medium text-muted-foreground">PPC Top-Up</h3>
+        <Link href={ppcTopUp.href} className="text-xs font-medium text-primary hover:underline">
+          View all →
+        </Link>
+      </div>
+      <div className="mt-3">
+        <PpcTopUpCharts />
       </div>
     </div>
   );

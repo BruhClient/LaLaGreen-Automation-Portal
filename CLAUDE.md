@@ -209,6 +209,35 @@ export async function GET() {
 
 ---
 
+## Adding a New Tool
+
+The sidebar and dashboard also have a separate "Tools" section, below Automations, sourced from `lib/tools.ts`. It follows the exact same pattern as `lib/projects.ts`, just under a different heading and route prefix. The "Tools" heading always renders (like "Automations"), even when the `tools` array is empty.
+
+### Step 1 — Define the tool (`lib/tools.ts`)
+
+```typescript
+import { Wrench } from "lucide-react"; // pick any lucide icon
+
+export const labelPrinter = defineTool({
+  name: "Label Printer",
+  description: "Print shipping labels in bulk",
+  icon: Wrench,
+});
+
+// Add it to the tools array — this auto-updates sidebar + dashboard
+export const tools: AutomationTool[] = [
+  labelPrinter, // <-- add here
+];
+```
+
+The `id` and `href` are auto-derived from the name (e.g. `"Label Printer"` → `id: "label-printer"`, `href: "/tools/label-printer"`).
+
+### Step 2 — Create the page
+
+Create `app/(portal)/tools/label-printer/page.tsx` following the same `<PageHeader>` pattern as an automation page (see "Adding a New Project" above) — just import from `@/lib/tools` instead of `@/lib/projects`.
+
+---
+
 ## Page Header Component
 
 Every automation page uses `<PageHeader>` at the top:
@@ -246,6 +275,7 @@ Below `<PageHeader>`, each page is entirely custom — there are no shared layou
 | File | Purpose |
 |---|---|
 | `lib/projects.ts` | Add/edit automation projects |
+| `lib/tools.ts` | Add/edit tools (separate "Tools" nav section) |
 | `lib/session.ts` | JWT sign/verify/cookie helpers |
 | `lib/supabase/server.ts` | Supabase client for server-side code |
 | `lib/supabase/client.ts` | Supabase client for browser code |
