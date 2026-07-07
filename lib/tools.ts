@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { FileSpreadsheet } from "lucide-react";
+import { FileSpreadsheet, Tag } from "lucide-react";
 
 export interface AutomationTool {
   id: string;
@@ -42,4 +42,10 @@ export const bulkCampaignUpload = defineTool({
   icon: FileSpreadsheet,
 });
 
-export const tools: AutomationTool[] = [bulkCampaignUpload];
+export const pricingUpdate = defineTool({
+  name: "Pricing Update",
+  description: "Look up current Amazon pricing for selected SKUs",
+  icon: Tag,
+});
+
+export const tools: AutomationTool[] = [bulkCampaignUpload, pricingUpdate];

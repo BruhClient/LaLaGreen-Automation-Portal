@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Users, Users2 } from "lucide-react";
+import { LayoutGrid, Sparkles, Users, Users2 } from "lucide-react";
 import { projects } from "@/lib/projects";
 import { tools } from "@/lib/tools";
 import { configurationItems } from "@/lib/configuration";
@@ -38,6 +38,17 @@ export function SidebarContent({
         >
           <LayoutGrid className="size-4" />
           Dashboard
+        </Link>
+
+        <Link
+          href="/chat"
+          className={cn(
+            "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-accent",
+            pathname === "/chat" && "bg-accent text-primary"
+          )}
+        >
+          <Sparkles className="size-4" />
+          Chat
         </Link>
 
         <Link
