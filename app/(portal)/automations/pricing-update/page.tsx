@@ -1,0 +1,548 @@
+"use client";
+
+import { useCallback, useEffect, useState, useTransition } from "react";
+import { ArrowDown, ArrowUp, X } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardAction } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { pricingUpdate } from "@/lib/projects";
+import { listSkus, type Sku } from "@/lib/actions/sku-list";
+import { fetchSkuPricing } from "@/lib/actions/pricing-update";
+import { listPricePlans, createPricePlan, cancelPricePlan, type PricePlan } from "@/lib/actions/price-change-plans";
+import type { MarketplaceCode } from "@/lib/amazon/sp-api";
+
+const inputClass =
+  "w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
+const primaryBtn =
+  "rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50";
+
+const DEFAULT_INCREMENT = "2";
+
+function formatPrice(amount: number | null) {
+  return amount === null ? "—" : `$${amount.toFixed(2)}`;
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+// n8n applies one step per day, so days remaining == steps remaining.
+function daysRemaining(current: number, target: number, increment: number): number {
+  return Math.ceil(Math.abs(target - current) / increment);
+}
+
+function progressPercent(start: number, current: number, target: number): number {
+  if (target === start) return 100;
+  const pct = ((current - start) / (target - start)) * 100;
+  return Math.min(100, Math.max(0, pct));
+}
+
+export default function PricingUpdatePage() {
+  const [plans, setPlans] = useState<PricePlan[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [cancelId, setCancelId] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function reloadPlans() {
+    startTransition(async () => {
+      const { data, error } = await listPricePlans();
+      if (error) setError(error);
+      else {
+        setPlans(data ?? []);
+        setError(null);
+      }
+    });
+  }
+
+  useEffect(() => {
+    reloadPlans();
+  }, []);
+
+  function confirmCancel() {
+    const id = cancelId;
+    if (!id) return;
+    setCancelId(null);
+    startTransition(async () => {
+      const { error } = await cancelPricePlan(id);
+      if (error) setError(error);
+      else reloadPlans();
+    });
+  }
+
+  return (
+    <>
+      <PageHeader icon={pricingUpdate.icon} title={pricingUpdate.name} description={pricingUpdate.description} />
+      <div className="space-y-6 p-6 md:p-8">
+        {error && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
+        <Card>
+          <CardHeader className="grid-cols-1! sm:grid-cols-[1fr_auto]!">
+            <CardTitle>Price Change Plans</CardTitle>
+            <CardDescription>
+              Gradually move a SKU&apos;s Amazon sales price toward a target. n8n executes each step —
+              this page only defines the plan and shows progress.
+            </CardDescription>
+            <CardAction>
+              <button onClick={() => setSheetOpen(true)} className={primaryBtn}>
+                + New Plan
+              </button>
+            </CardAction>
+          </CardHeader>
+          <CardContent>
+            {plans === null ? (
+              <div className="space-y-2">
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+              </div>
+            ) : plans.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No price change plans yet — click &quot;+ New Plan&quot; to create one.
+              </p>
+            ) : (
+              <PlansList plans={plans} isPending={isPending} onCancel={setCancelId} />
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <NewPricePlanSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        onCreated={() => {
+          setSheetOpen(false);
+          reloadPlans();
+        }}
+      />
+
+      <AlertDialog open={cancelId !== null} onOpenChange={(open) => !open && setCancelId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel this price change plan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              n8n will stop applying further steps for this plan. This can&apos;t be undone — you&apos;ll need to
+              create a new plan if you want to resume.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Plan</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={confirmCancel}>
+              Cancel Plan
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+function PlansList({
+  plans,
+  isPending,
+  onCancel,
+}: {
+  plans: PricePlan[];
+  isPending: boolean;
+  onCancel: (id: string) => void;
+}) {
+  const [marketFilter, setMarketFilter] = useState<"ALL" | MarketplaceCode>("ALL");
+  const filtered = marketFilter === "ALL" ? plans : plans.filter((p) => p.marketplace === marketFilter);
+
+  const pending = filtered.filter((p) => p.status === "active");
+  const completed = filtered.filter((p) => p.status === "completed");
+  const cancelled = filtered.filter((p) => p.status === "cancelled");
+
+  return (
+    <Tabs defaultValue="pending">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <TabsList>
+          <TabsTrigger value="pending">Pending ({pending.length})</TabsTrigger>
+          <TabsTrigger value="completed">Completed ({completed.length})</TabsTrigger>
+          <TabsTrigger value="cancelled">Cancelled ({cancelled.length})</TabsTrigger>
+        </TabsList>
+        <select
+          value={marketFilter}
+          onChange={(e) => setMarketFilter(e.target.value as "ALL" | MarketplaceCode)}
+          className="rounded-md border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          <option value="ALL">All Marketplaces</option>
+          <option value="US">US</option>
+          <option value="CA">Canada</option>
+        </select>
+      </div>
+
+      <TabsContent value="pending" className="mt-4">
+        {pending.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No pending plans right now.</p>
+        ) : (
+          <div className="space-y-3">
+            {pending.map((p) => (
+              <PlanCard key={p.id} plan={p} disabled={isPending} onCancel={() => onCancel(p.id)} />
+            ))}
+          </div>
+        )}
+      </TabsContent>
+
+      <TabsContent value="completed" className="mt-4">
+        <HistoryTable plans={completed} emptyText="No completed plans yet." />
+      </TabsContent>
+
+      <TabsContent value="cancelled" className="mt-4">
+        <HistoryTable plans={cancelled} emptyText="No cancelled plans." />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+function HistoryTable({ plans, emptyText }: { plans: PricePlan[]; emptyText: string }) {
+  if (plans.length === 0) return <p className="text-sm text-muted-foreground">{emptyText}</p>;
+
+  return (
+    <div className="overflow-x-auto rounded-md border border-border">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-border text-left text-muted-foreground">
+            <th className="px-3 py-2 font-medium">SKU</th>
+            <th className="px-3 py-2 font-medium">Market</th>
+            <th className="px-3 py-2 font-medium">Start → Target</th>
+            <th className="px-3 py-2 font-medium">Created</th>
+          </tr>
+        </thead>
+        <tbody>
+          {plans.map((p) => (
+            <tr key={p.id} className="border-b border-border last:border-0">
+              <td className="px-3 py-2 font-mono">{p.sku}</td>
+              <td className="px-3 py-2">{p.marketplace}</td>
+              <td className="px-3 py-2">
+                {formatPrice(p.start_price)}
+                <span className="text-muted-foreground"> → </span>
+                {formatPrice(p.target_price)}
+              </td>
+              <td className="px-3 py-2 text-muted-foreground">{formatDate(p.created_at)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function PlanCard({ plan: p, disabled, onCancel }: { plan: PricePlan; disabled: boolean; onCancel: () => void }) {
+  const pct = progressPercent(p.start_price, p.current_price, p.target_price);
+  const days = daysRemaining(p.current_price, p.target_price, p.increment);
+  const DirectionIcon = p.direction === "increase" ? ArrowUp : ArrowDown;
+
+  return (
+    <div className="rounded-lg border border-border p-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-mono text-sm font-medium">{p.sku}</span>
+          <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{p.marketplace}</span>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={onCancel}
+          disabled={disabled}
+          aria-label="Cancel plan"
+          title="Cancel plan"
+        >
+          <X />
+        </Button>
+      </div>
+
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        <div>
+          <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Current</p>
+          <p className="flex items-center gap-1 text-lg font-semibold">
+            <DirectionIcon className="size-4 text-muted-foreground" />
+            {formatPrice(p.current_price)}
+          </p>
+        </div>
+        <div>
+          <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Target</p>
+          <p className="text-lg font-semibold">{formatPrice(p.target_price)}</p>
+        </div>
+        <div>
+          <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Days Left</p>
+          <p className="text-lg font-semibold">{days}</p>
+        </div>
+      </div>
+
+      <div className="mt-3 flex items-center gap-3">
+        <span className="w-14 shrink-0 text-xs text-muted-foreground">{formatPrice(p.start_price)}</span>
+        <div className="relative h-1.5 flex-1 rounded-full bg-muted">
+          <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+          <div
+            className="absolute top-1/2 size-3 rounded-full border-2 border-background bg-primary shadow"
+            style={{ left: `${pct}%`, transform: "translate(-50%, -50%)" }}
+          />
+        </div>
+        <span className="w-14 shrink-0 text-right text-xs text-muted-foreground">{formatPrice(p.target_price)}</span>
+      </div>
+
+      <p className="mt-2 text-xs text-muted-foreground/70">
+        {formatPrice(p.increment)} per step · started {formatDate(p.created_at)}
+      </p>
+    </div>
+  );
+}
+
+function NewPricePlanSheet({
+  open,
+  onOpenChange,
+  onCreated,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCreated: () => void;
+}) {
+  const [skus, setSkus] = useState<Sku[] | null>(null);
+  const [search, setSearch] = useState("");
+  const [selectedSku, setSelectedSku] = useState<string | null>(null);
+  const [marketplace, setMarketplace] = useState<MarketplaceCode>("US");
+  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+  const [priceError, setPriceError] = useState<string | null>(null);
+  const [targetPrice, setTargetPrice] = useState("");
+  const [increment, setIncrement] = useState(DEFAULT_INCREMENT);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (open && skus === null) {
+      listSkus().then(({ data }) => setSkus(data ?? []));
+    }
+  }, [open, skus]);
+
+  function resetForm() {
+    setSearch("");
+    setSelectedSku(null);
+    setMarketplace("US");
+    setCurrentPrice(null);
+    setPriceError(null);
+    setTargetPrice("");
+    setIncrement(DEFAULT_INCREMENT);
+    setCreateError(null);
+  }
+
+  function selectSku(sku: string) {
+    setSelectedSku(sku);
+    setCurrentPrice(null);
+    setPriceError(null);
+  }
+
+  const fetchPrice = useCallback(
+    (sku: string, mp: MarketplaceCode) => {
+      startTransition(async () => {
+        setPriceError(null);
+        setCurrentPrice(null);
+        const { data, error } = await fetchSkuPricing([sku], mp);
+        if (error) {
+          setPriceError(error);
+          setCurrentPrice(null);
+        } else {
+          const result = data?.[0];
+          if (!result || result.salesPrice === null) {
+            setPriceError(result?.error ?? "No sales price available for this SKU");
+            setCurrentPrice(null);
+          } else {
+            setCurrentPrice(result.salesPrice);
+            setPriceError(null);
+          }
+        }
+      });
+    },
+    [startTransition]
+  );
+
+  useEffect(() => {
+    if (selectedSku) fetchPrice(selectedSku, marketplace);
+  }, [selectedSku, marketplace, fetchPrice]);
+
+  const targetNum = Number(targetPrice);
+  const incrementNum = Number(increment);
+  const hasValidTarget = targetPrice.trim() !== "" && Number.isFinite(targetNum);
+  const hasValidIncrement = increment.trim() !== "" && Number.isFinite(incrementNum) && incrementNum > 0;
+  const canCreate =
+    currentPrice !== null && hasValidTarget && targetNum !== currentPrice && hasValidIncrement && !isPending;
+
+  const direction = currentPrice !== null && hasValidTarget ? (targetNum > currentPrice ? "increase" : "decrease") : null;
+  const steps =
+    currentPrice !== null && hasValidTarget && hasValidIncrement
+      ? Math.ceil(Math.abs(targetNum - currentPrice) / incrementNum)
+      : null;
+
+  function handleCreate() {
+    if (!selectedSku || currentPrice === null) return;
+    setCreateError(null);
+    startTransition(async () => {
+      const { error } = await createPricePlan({
+        sku: selectedSku,
+        marketplace,
+        targetPrice: targetNum,
+        increment: incrementNum,
+      });
+      if (error) setCreateError(error);
+      else {
+        resetForm();
+        onCreated();
+      }
+    });
+  }
+
+  const filtered = (skus ?? []).filter((s) => s.sku.toUpperCase().includes(search.trim().toUpperCase()));
+
+  return (
+    <Sheet
+      open={open}
+      onOpenChange={(next) => {
+        onOpenChange(next);
+        if (!next) resetForm();
+      }}
+    >
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>New Price Change Plan</SheetTitle>
+          <SheetDescription>
+            Pick a SKU, confirm its current sales price, then set a target and step size.
+          </SheetDescription>
+        </SheetHeader>
+
+        <div className="flex-1 space-y-4 overflow-y-auto px-4">
+          {createError && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {createError}
+            </div>
+          )}
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">SKU</label>
+            <input
+              className={`${inputClass} mb-2`}
+              placeholder="Filter SKUs…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-border p-1">
+              {skus === null ? (
+                <Skeleton className="h-8 w-full" />
+              ) : filtered.length === 0 ? (
+                <p className="px-2 py-1.5 text-sm text-muted-foreground">No SKUs match &quot;{search}&quot;.</p>
+              ) : (
+                filtered.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => selectSku(s.sku)}
+                    className={`block w-full rounded-md px-2 py-1.5 text-left font-mono text-sm ${
+                      selectedSku === s.sku ? "bg-primary/10 text-primary" : "hover:bg-accent"
+                    }`}
+                  >
+                    {s.sku}
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Marketplace</label>
+            <select
+              value={marketplace}
+              onChange={(e) => setMarketplace(e.target.value as MarketplaceCode)}
+              className={inputClass}
+            >
+              <option value="US">US</option>
+              <option value="CA">Canada</option>
+            </select>
+          </div>
+
+          {selectedSku && (
+            <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm">
+              {isPending ? (
+                <Skeleton className="h-5 w-40" />
+              ) : priceError ? (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-destructive">{priceError}</span>
+                  <button onClick={() => fetchPrice(selectedSku, marketplace)} className="shrink-0 text-xs text-primary hover:underline">
+                    Retry
+                  </button>
+                </div>
+              ) : currentPrice !== null ? (
+                <div className="flex items-center justify-between gap-2">
+                  <span>
+                    Current sales price: <span className="font-medium">{formatPrice(currentPrice)}</span>
+                  </span>
+                  <button onClick={() => fetchPrice(selectedSku, marketplace)} className="shrink-0 text-xs text-primary hover:underline">
+                    Refresh
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Target price ($)</label>
+              <input
+                type="number"
+                step="0.01"
+                className={inputClass}
+                value={targetPrice}
+                onChange={(e) => setTargetPrice(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Increment ($)</label>
+              <input
+                type="number"
+                step="0.01"
+                className={inputClass}
+                value={increment}
+                onChange={(e) => setIncrement(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {direction && steps !== null && (
+            <p className="text-sm text-muted-foreground">
+              This will {direction} the price from {formatPrice(currentPrice)} to {formatPrice(targetNum)} in steps
+              of up to {formatPrice(incrementNum)} — about {steps} day{steps === 1 ? "" : "s"} to reach the target
+              (n8n applies one step per day).
+            </p>
+          )}
+        </div>
+
+        <SheetFooter>
+          <button onClick={handleCreate} disabled={!canCreate} className={primaryBtn}>
+            {isPending ? "Creating…" : "Create Plan"}
+          </button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+}

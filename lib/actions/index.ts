@@ -6,3 +6,4 @@ export * from "./bulk-campaign";
 export * from "./sku-list";
 export * from "./ai-chat";
 export * from "./pricing-update";
+export * from "./price-change-plans";

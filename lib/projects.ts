@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Wallet } from "lucide-react";
+import { Tag, Wallet } from "lucide-react";
 
 export interface AutomationProject {
   id: string;
@@ -42,4 +42,10 @@ export const ppcTopUp = defineProject({
   icon: Wallet,
 });
 
-export const projects: AutomationProject[] = [ppcTopUp];
+export const pricingUpdate = defineProject({
+  name: "Pricing Update",
+  description: "Plan gradual Amazon sales price changes, executed step-by-step by n8n",
+  icon: Tag,
+});
+
+export const projects: AutomationProject[] = [ppcTopUp, pricingUpdate];

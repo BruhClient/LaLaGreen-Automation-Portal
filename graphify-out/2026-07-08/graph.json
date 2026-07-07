@@ -40,7 +40,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_portal_automations_ppc_top_up_page",
-      "community": 0,
+      "community": 8,
       "norm_label": "page.tsx"
     },
     {
@@ -60,7 +60,7 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "app_portal_automations_ppc_top_up_page_relativedaylabel",
-      "community": 1,
+      "community": 8,
       "norm_label": "relativedaylabel()"
     },
     {
@@ -70,7 +70,7 @@
       "source_location": "L75",
       "_origin": "ast",
       "id": "app_portal_automations_ppc_top_up_page_tonumericamount",
-      "community": 0,
+      "community": 8,
       "norm_label": "tonumericamount()"
     },
     {
@@ -80,7 +80,7 @@
       "source_location": "L80",
       "_origin": "ast",
       "id": "app_portal_automations_ppc_top_up_page_statusbadgeclass",
-      "community": 1,
+      "community": 8,
       "norm_label": "statusbadgeclass()"
     },
     {
@@ -100,7 +100,7 @@
       "source_location": "L90",
       "_origin": "ast",
       "id": "app_portal_automations_ppc_top_up_page_ppctopuppage",
-      "community": 0,
+      "community": 8,
       "norm_label": "ppctopuppage()"
     },
     {
@@ -120,108 +120,8 @@
       "source_location": "L718",
       "_origin": "ast",
       "id": "app_portal_automations_ppc_top_up_page_aiimportdialog",
-      "community": 0,
+      "community": 8,
       "norm_label": "aiimportdialog()"
-    },
-    {
-      "label": "page.tsx",
-      "file_type": "code",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "app_portal_automations_pricing_update_page",
-      "community": 24,
-      "norm_label": "page.tsx"
-    },
-    {
-      "label": "formatPrice()",
-      "file_type": "code",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L29",
-      "_origin": "ast",
-      "id": "app_portal_automations_pricing_update_page_formatprice",
-      "community": 24,
-      "norm_label": "formatprice()"
-    },
-    {
-      "label": "statusBadgeClass()",
-      "file_type": "code",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L33",
-      "_origin": "ast",
-      "id": "app_portal_automations_pricing_update_page_statusbadgeclass",
-      "community": 24,
-      "norm_label": "statusbadgeclass()"
-    },
-    {
-      "label": "formatDate()",
-      "file_type": "code",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L39",
-      "_origin": "ast",
-      "id": "app_portal_automations_pricing_update_page_formatdate",
-      "community": 24,
-      "norm_label": "formatdate()"
-    },
-    {
-      "label": "daysRemaining()",
-      "file_type": "code",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L44",
-      "_origin": "ast",
-      "id": "app_portal_automations_pricing_update_page_daysremaining",
-      "community": 24,
-      "norm_label": "daysremaining()"
-    },
-    {
-      "label": "progressPercent()",
-      "file_type": "code",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L48",
-      "_origin": "ast",
-      "id": "app_portal_automations_pricing_update_page_progresspercent",
-      "community": 24,
-      "norm_label": "progresspercent()"
-    },
-    {
-      "label": "PricingUpdatePage()",
-      "file_type": "code",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L54",
-      "_origin": "ast",
-      "id": "app_portal_automations_pricing_update_page_pricingupdatepage",
-      "community": 24,
-      "norm_label": "pricingupdatepage()"
-    },
-    {
-      "label": "PlansList()",
-      "file_type": "code",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L136",
-      "_origin": "ast",
-      "id": "app_portal_automations_pricing_update_page_planslist",
-      "community": 24,
-      "norm_label": "planslist()"
-    },
-    {
-      "label": "PlanCard()",
-      "file_type": "code",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L203",
-      "_origin": "ast",
-      "id": "app_portal_automations_pricing_update_page_plancard",
-      "community": 24,
-      "norm_label": "plancard()"
-    },
-    {
-      "label": "NewPricePlanSheet()",
-      "file_type": "code",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L251",
-      "_origin": "ast",
-      "id": "app_portal_automations_pricing_update_page_newpriceplansheet",
-      "community": 24,
-      "norm_label": "newpriceplansheet()"
     },
     {
       "label": "page.tsx",
@@ -250,7 +150,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_portal_configuration_master_list_page",
-      "community": 0,
+      "community": 8,
       "norm_label": "page.tsx"
     },
     {
@@ -260,7 +160,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "app_portal_configuration_master_list_page_masterlistpage",
-      "community": 0,
+      "community": 8,
       "norm_label": "masterlistpage()"
     },
     {
@@ -270,7 +170,7 @@
       "source_location": "L132",
       "_origin": "ast",
       "id": "app_portal_configuration_master_list_page_addskussheet",
-      "community": 0,
+      "community": 8,
       "norm_label": "addskussheet()"
     },
     {
@@ -280,7 +180,7 @@
       "source_location": "L197",
       "_origin": "ast",
       "id": "app_portal_configuration_master_list_page_importskussheet",
-      "community": 0,
+      "community": 8,
       "norm_label": "importskussheet()"
     },
     {
@@ -290,7 +190,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_portal_dashboard_page",
-      "community": 1,
+      "community": 2,
       "norm_label": "page.tsx"
     },
     {
@@ -300,7 +200,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "app_portal_dashboard_page_dashboardpage",
-      "community": 11,
+      "community": 2,
       "norm_label": "dashboardpage()"
     },
     {
@@ -310,7 +210,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_portal_layout",
-      "community": 11,
+      "community": 9,
       "norm_label": "layout.tsx"
     },
     {
@@ -320,7 +220,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "app_portal_layout_portallayout",
-      "community": 11,
+      "community": 9,
       "norm_label": "portallayout()"
     },
     {
@@ -352,6 +252,66 @@
       "id": "app_portal_team_page_teampage",
       "community": 2,
       "norm_label": "teampage()"
+    },
+    {
+      "label": "page.tsx",
+      "file_type": "code",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "app_portal_tools_pricing_update_page",
+      "community": 8,
+      "norm_label": "page.tsx"
+    },
+    {
+      "label": "formatPrice()",
+      "file_type": "code",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L30",
+      "_origin": "ast",
+      "id": "app_portal_tools_pricing_update_page_formatprice",
+      "community": 8,
+      "norm_label": "formatprice()"
+    },
+    {
+      "label": "statusBadgeClass()",
+      "file_type": "code",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L34",
+      "_origin": "ast",
+      "id": "app_portal_tools_pricing_update_page_statusbadgeclass",
+      "community": 8,
+      "norm_label": "statusbadgeclass()"
+    },
+    {
+      "label": "formatDate()",
+      "file_type": "code",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L40",
+      "_origin": "ast",
+      "id": "app_portal_tools_pricing_update_page_formatdate",
+      "community": 8,
+      "norm_label": "formatdate()"
+    },
+    {
+      "label": "PricingUpdatePage()",
+      "file_type": "code",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L44",
+      "_origin": "ast",
+      "id": "app_portal_tools_pricing_update_page_pricingupdatepage",
+      "community": 8,
+      "norm_label": "pricingupdatepage()"
+    },
+    {
+      "label": "NewPricePlanSheet()",
+      "file_type": "code",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L172",
+      "_origin": "ast",
+      "id": "app_portal_tools_pricing_update_page_newpriceplansheet",
+      "community": 8,
+      "norm_label": "newpriceplansheet()"
     },
     {
       "label": "generate-form.tsx",
@@ -600,7 +560,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_api_auth_login_route",
-      "community": 11,
+      "community": 25,
       "norm_label": "route.ts"
     },
     {
@@ -610,7 +570,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "app_api_auth_login_route_post",
-      "community": 11,
+      "community": 25,
       "norm_label": "post()"
     },
     {
@@ -620,7 +580,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_api_auth_logout_route",
-      "community": 11,
+      "community": 25,
       "norm_label": "route.ts"
     },
     {
@@ -630,7 +590,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "app_api_auth_logout_route_post",
-      "community": 11,
+      "community": 25,
       "norm_label": "post()"
     },
     {
@@ -710,7 +670,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_login_page",
-      "community": 0,
+      "community": 8,
       "norm_label": "page.tsx"
     },
     {
@@ -720,7 +680,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "app_login_page_loginpage",
-      "community": 0,
+      "community": 8,
       "norm_label": "loginpage()"
     },
     {
@@ -1050,7 +1010,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_ppc_top_up_chart",
-      "community": 1,
+      "community": 8,
       "norm_label": "ppc-top-up-chart.tsx"
     },
     {
@@ -1080,7 +1040,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "components_sidebar_content_sidebarcontent",
-      "community": 0,
+      "community": 9,
       "norm_label": "sidebarcontent()"
     },
     {
@@ -1090,7 +1050,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_sidebar",
-      "community": 11,
+      "community": 9,
       "norm_label": "sidebar.tsx"
     },
     {
@@ -1100,7 +1060,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "components_sidebar_sidebar",
-      "community": 11,
+      "community": 9,
       "norm_label": "sidebar()"
     },
     {
@@ -1110,7 +1070,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_topbar",
-      "community": 0,
+      "community": 8,
       "norm_label": "topbar.tsx"
     },
     {
@@ -1120,7 +1080,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "components_topbar_topbar",
-      "community": 11,
+      "community": 9,
       "norm_label": "topbar()"
     },
     {
@@ -1260,7 +1220,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_ui_card",
-      "community": 0,
+      "community": 8,
       "norm_label": "card.tsx"
     },
     {
@@ -1270,7 +1230,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "components_ui_card_card",
-      "community": 0,
+      "community": 8,
       "norm_label": "card()"
     },
     {
@@ -1280,7 +1240,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "components_ui_card_cardheader",
-      "community": 0,
+      "community": 8,
       "norm_label": "cardheader()"
     },
     {
@@ -1290,7 +1250,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "components_ui_card_cardtitle",
-      "community": 0,
+      "community": 8,
       "norm_label": "cardtitle()"
     },
     {
@@ -1300,7 +1260,7 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "components_ui_card_carddescription",
-      "community": 0,
+      "community": 8,
       "norm_label": "carddescription()"
     },
     {
@@ -1310,7 +1270,7 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "components_ui_card_cardaction",
-      "community": 0,
+      "community": 8,
       "norm_label": "cardaction()"
     },
     {
@@ -1320,7 +1280,7 @@
       "source_location": "L72",
       "_origin": "ast",
       "id": "components_ui_card_cardcontent",
-      "community": 0,
+      "community": 8,
       "norm_label": "cardcontent()"
     },
     {
@@ -1420,7 +1380,7 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "components_ui_chart_chartcontainer",
-      "community": 0,
+      "community": 10,
       "norm_label": "chartcontainer()"
     },
     {
@@ -1470,7 +1430,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_ui_checkbox",
-      "community": 0,
+      "community": 8,
       "norm_label": "checkbox.tsx"
     },
     {
@@ -1480,7 +1440,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "components_ui_checkbox_checkbox",
-      "community": 0,
+      "community": 8,
       "norm_label": "checkbox()"
     },
     {
@@ -1710,7 +1670,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_ui_sheet",
-      "community": 0,
+      "community": 8,
       "norm_label": "sheet.tsx"
     },
     {
@@ -1720,7 +1680,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "components_ui_sheet_sheet",
-      "community": 0,
+      "community": 8,
       "norm_label": "sheet()"
     },
     {
@@ -1730,7 +1690,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "components_ui_sheet_sheettrigger",
-      "community": 0,
+      "community": 8,
       "norm_label": "sheettrigger()"
     },
     {
@@ -1740,7 +1700,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "components_ui_sheet_sheetclose",
-      "community": 0,
+      "community": 8,
       "norm_label": "sheetclose()"
     },
     {
@@ -1750,7 +1710,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "components_ui_sheet_sheetportal",
-      "community": 0,
+      "community": 8,
       "norm_label": "sheetportal()"
     },
     {
@@ -1770,7 +1730,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "components_ui_sheet_sheetcontent",
-      "community": 0,
+      "community": 8,
       "norm_label": "sheetcontent()"
     },
     {
@@ -1780,7 +1740,7 @@
       "source_location": "L83",
       "_origin": "ast",
       "id": "components_ui_sheet_sheetheader",
-      "community": 0,
+      "community": 8,
       "norm_label": "sheetheader()"
     },
     {
@@ -1790,7 +1750,7 @@
       "source_location": "L93",
       "_origin": "ast",
       "id": "components_ui_sheet_sheetfooter",
-      "community": 0,
+      "community": 8,
       "norm_label": "sheetfooter()"
     },
     {
@@ -1800,7 +1760,7 @@
       "source_location": "L103",
       "_origin": "ast",
       "id": "components_ui_sheet_sheettitle",
-      "community": 0,
+      "community": 8,
       "norm_label": "sheettitle()"
     },
     {
@@ -1810,7 +1770,7 @@
       "source_location": "L116",
       "_origin": "ast",
       "id": "components_ui_sheet_sheetdescription",
-      "community": 0,
+      "community": 8,
       "norm_label": "sheetdescription()"
     },
     {
@@ -1820,7 +1780,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_ui_skeleton",
-      "community": 0,
+      "community": 8,
       "norm_label": "skeleton.tsx"
     },
     {
@@ -1830,7 +1790,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "components_ui_skeleton_skeleton",
-      "community": 0,
+      "community": 8,
       "norm_label": "skeleton()"
     },
     {
@@ -1890,7 +1850,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "components_user_menu_usermenu",
-      "community": 9,
+      "community": 0,
       "norm_label": "usermenu()"
     },
     {
@@ -1920,7 +1880,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "lib_actions_ai_chat",
-      "community": 9,
+      "community": 2,
       "norm_label": "ai-chat.ts"
     },
     {
@@ -1930,7 +1890,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "lib_actions_ai_chat_sendaichatmessage",
-      "community": 9,
+      "community": 2,
       "norm_label": "sendaichatmessage()"
     },
     {
@@ -2370,7 +2330,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "lib_actions_ppc_daily_cap_countryconfig",
-      "community": 1,
+      "community": 8,
       "norm_label": "countryconfig"
     },
     {
@@ -2380,7 +2340,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "lib_actions_ppc_daily_cap_schedulerow",
-      "community": 1,
+      "community": 8,
       "norm_label": "schedulerow"
     },
     {
@@ -2460,7 +2420,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "lib_actions_ppc_manual_topups_manualtopup",
-      "community": 1,
+      "community": 8,
       "norm_label": "manualtopup"
     },
     {
@@ -2557,7 +2517,7 @@
       "label": "cancelPricePlan()",
       "file_type": "code",
       "source_file": "lib/actions/price-change-plans.ts",
-      "source_location": "L115",
+      "source_location": "L107",
       "_origin": "ast",
       "id": "lib_actions_price_change_plans_cancelpriceplan",
       "community": 24,
@@ -2620,7 +2580,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "lib_actions_sku_list_sku",
-      "community": 26,
+      "community": 8,
       "norm_label": "sku"
     },
     {
@@ -2630,7 +2590,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "lib_actions_sku_list_listskus",
-      "community": 24,
+      "community": 8,
       "norm_label": "listskus()"
     },
     {
@@ -2840,7 +2800,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "lib_ai_chat_provider",
-      "community": 9,
+      "community": 2,
       "norm_label": "chat-provider.ts"
     },
     {
@@ -2850,7 +2810,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "lib_ai_chat_provider_chatmessage",
-      "community": 9,
+      "community": 2,
       "norm_label": "chatmessage"
     },
     {
@@ -2860,7 +2820,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "lib_ai_chat_provider_generateassistantreply",
-      "community": 9,
+      "community": 2,
       "norm_label": "generateassistantreply()"
     },
     {
@@ -2870,7 +2830,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "lib_ai_tools",
-      "community": 9,
+      "community": 2,
       "norm_label": "tools.ts"
     },
     {
@@ -2880,7 +2840,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "lib_ai_tools_chattooldefinitions",
-      "community": 9,
+      "community": 2,
       "norm_label": "chattooldefinitions"
     },
     {
@@ -2890,7 +2850,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "lib_ai_tools_runchattool",
-      "community": 9,
+      "community": 2,
       "norm_label": "runchattool()"
     },
     {
@@ -3240,7 +3200,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "lib_projects",
-      "community": 1,
+      "community": 2,
       "norm_label": "projects.ts"
     },
     {
@@ -3250,7 +3210,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "lib_projects_automationproject",
-      "community": 1,
+      "community": 2,
       "norm_label": "automationproject"
     },
     {
@@ -3260,7 +3220,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "lib_projects_projectinput",
-      "community": 1,
+      "community": 2,
       "norm_label": "projectinput"
     },
     {
@@ -3270,7 +3230,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "lib_projects_slugify",
-      "community": 1,
+      "community": 2,
       "norm_label": "slugify()"
     },
     {
@@ -3280,7 +3240,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "lib_projects_defineproject",
-      "community": 1,
+      "community": 2,
       "norm_label": "defineproject()"
     },
     {
@@ -3290,27 +3250,17 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "lib_projects_ppctopup",
-      "community": 1,
+      "community": 2,
       "norm_label": "ppctopup"
-    },
-    {
-      "label": "pricingUpdate",
-      "file_type": "code",
-      "source_file": "lib/projects.ts",
-      "source_location": "L45",
-      "_origin": "ast",
-      "id": "lib_projects_pricingupdate",
-      "community": 1,
-      "norm_label": "pricingupdate"
     },
     {
       "label": "projects",
       "file_type": "code",
       "source_file": "lib/projects.ts",
-      "source_location": "L51",
+      "source_location": "L45",
       "_origin": "ast",
       "id": "lib_projects_projects",
-      "community": 9,
+      "community": 2,
       "norm_label": "projects"
     },
     {
@@ -3320,7 +3270,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "lib_session",
-      "community": 11,
+      "community": 25,
       "norm_label": "session.ts"
     },
     {
@@ -3330,7 +3280,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "lib_session_getsecretkey",
-      "community": 11,
+      "community": 25,
       "norm_label": "getsecretkey()"
     },
     {
@@ -3340,7 +3290,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "lib_session_sessionpayload",
-      "community": 11,
+      "community": 25,
       "norm_label": "sessionpayload"
     },
     {
@@ -3350,7 +3300,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "lib_session_signsession",
-      "community": 11,
+      "community": 25,
       "norm_label": "signsession()"
     },
     {
@@ -3360,7 +3310,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "lib_session_verifysessiontoken",
-      "community": 11,
+      "community": 25,
       "norm_label": "verifysessiontoken()"
     },
     {
@@ -3370,7 +3320,7 @@
       "source_location": "L43",
       "_origin": "ast",
       "id": "lib_session_getsession",
-      "community": 11,
+      "community": 2,
       "norm_label": "getsession()"
     },
     {
@@ -3380,7 +3330,7 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "lib_session_setsessioncookie",
-      "community": 11,
+      "community": 25,
       "norm_label": "setsessioncookie()"
     },
     {
@@ -3390,7 +3340,7 @@
       "source_location": "L61",
       "_origin": "ast",
       "id": "lib_session_clearsessioncookie",
-      "community": 11,
+      "community": 25,
       "norm_label": "clearsessioncookie()"
     },
     {
@@ -3514,13 +3464,23 @@
       "norm_label": "bulkcampaignupload"
     },
     {
-      "label": "tools",
+      "label": "pricingUpdate",
       "file_type": "code",
       "source_file": "lib/tools.ts",
       "source_location": "L45",
       "_origin": "ast",
-      "id": "lib_tools_tools",
+      "id": "lib_tools_pricingupdate",
       "community": 9,
+      "norm_label": "pricingupdate"
+    },
+    {
+      "label": "tools",
+      "file_type": "code",
+      "source_file": "lib/tools.ts",
+      "source_location": "L51",
+      "_origin": "ast",
+      "id": "lib_tools_tools",
+      "community": 2,
       "norm_label": "tools"
     },
     {
@@ -3690,7 +3650,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "middleware",
-      "community": 11,
+      "community": 25,
       "norm_label": "middleware.ts"
     },
     {
@@ -3700,7 +3660,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "middleware_middleware",
-      "community": 11,
+      "community": 25,
       "norm_label": "middleware()"
     },
     {
@@ -3710,7 +3670,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "middleware_config",
-      "community": 11,
+      "community": 25,
       "norm_label": "config"
     },
     {
@@ -5881,558 +5841,6 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L44",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "app_portal_automations_pricing_update_page_daysremaining",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L39",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "app_portal_automations_pricing_update_page_formatdate",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L29",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "app_portal_automations_pricing_update_page_formatprice",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L251",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "app_portal_automations_pricing_update_page_newpriceplansheet",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L203",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "app_portal_automations_pricing_update_page_plancard",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L136",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "app_portal_automations_pricing_update_page_planslist",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L54",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "app_portal_automations_pricing_update_page_pricingupdatepage",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L48",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "app_portal_automations_pricing_update_page_progresspercent",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L33",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "app_portal_automations_pricing_update_page_statusbadgeclass",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L5",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "components_page_header",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L5",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "components_page_header_pageheader",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L6",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "components_ui_card",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L6",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "components_ui_card_card",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L6",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "components_ui_card_cardaction",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L6",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "components_ui_card_cardcontent",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L6",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "components_ui_card_carddescription",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L6",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "components_ui_card_cardheader",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L6",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "components_ui_card_cardtitle",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L8",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "components_ui_sheet",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L8",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "components_ui_sheet_sheet",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L8",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "components_ui_sheet_sheetcontent",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L8",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "components_ui_sheet_sheetdescription",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L8",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "components_ui_sheet_sheetfooter",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L8",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "components_ui_sheet_sheetheader",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L8",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "components_ui_sheet_sheettitle",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L7",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "components_ui_skeleton",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L7",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "components_ui_skeleton_skeleton",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L19",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "lib_actions_price_change_plans",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L19",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "lib_actions_price_change_plans_cancelpriceplan",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L19",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "lib_actions_price_change_plans_createpriceplan",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L19",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "lib_actions_price_change_plans_listpriceplans",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L19",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "lib_actions_price_change_plans_priceplan",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L18",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "lib_actions_pricing_update",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L18",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "lib_actions_pricing_update_fetchskupricing",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L17",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "lib_actions_sku_list",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L17",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "lib_actions_sku_list_listskus",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L17",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "lib_actions_sku_list_sku",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L20",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "lib_amazon_sp_api",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L20",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "lib_amazon_sp_api_marketplacecode",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L16",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "lib_projects",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L16",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page",
-      "target": "lib_projects_pricingupdate",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L434",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page_newpriceplansheet",
-      "target": "app_portal_automations_pricing_update_page_formatprice",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L229",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page_plancard",
-      "target": "app_portal_automations_pricing_update_page_formatprice",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L182",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page_planslist",
-      "target": "app_portal_automations_pricing_update_page_formatprice",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L187",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page_planslist",
-      "target": "app_portal_automations_pricing_update_page_statusbadgeclass",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L245",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page_plancard",
-      "target": "app_portal_automations_pricing_update_page_formatdate",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L191",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page_planslist",
-      "target": "app_portal_automations_pricing_update_page_formatdate",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L205",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page_plancard",
-      "target": "app_portal_automations_pricing_update_page_daysremaining",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L204",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page_plancard",
-      "target": "app_portal_automations_pricing_update_page_progresspercent",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L299",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page_newpriceplansheet",
-      "target": "lib_actions_pricing_update_fetchskupricing"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "app/(portal)/automations/pricing-update/page.tsx",
-      "source_location": "L273",
-      "weight": 1.0,
-      "source": "app_portal_automations_pricing_update_page_newpriceplansheet",
-      "target": "lib_actions_sku_list_listskus"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
       "source_file": "app/(portal)/chat/page.tsx",
       "source_location": "L5",
       "weight": 1.0,
@@ -7092,6 +6500,463 @@
       "weight": 1.0,
       "source": "app_portal_team_page_teampage",
       "target": "lib_actions_staff_getstaffdirectory"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L40",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "app_portal_tools_pricing_update_page_formatdate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L30",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "app_portal_tools_pricing_update_page_formatprice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L172",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "app_portal_tools_pricing_update_page_newpriceplansheet",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L44",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "app_portal_tools_pricing_update_page_pricingupdatepage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L34",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "app_portal_tools_pricing_update_page_statusbadgeclass",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "components_page_header",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "components_page_header_pageheader",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "components_ui_card",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "components_ui_card_card",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "components_ui_card_cardaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "components_ui_card_cardcontent",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "components_ui_card_carddescription",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "components_ui_card_cardheader",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "components_ui_card_cardtitle",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "components_ui_sheet",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "components_ui_sheet_sheet",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "components_ui_sheet_sheetcontent",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "components_ui_sheet_sheetdescription",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "components_ui_sheet_sheetfooter",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "components_ui_sheet_sheetheader",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "components_ui_sheet_sheettitle",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "components_ui_skeleton",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "components_ui_skeleton_skeleton",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L18",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "lib_actions_price_change_plans",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L18",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "lib_actions_price_change_plans_cancelpriceplan",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L18",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "lib_actions_price_change_plans_createpriceplan",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L18",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "lib_actions_price_change_plans_listpriceplans",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L18",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "lib_actions_price_change_plans_priceplan",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "lib_actions_pricing_update",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "lib_actions_pricing_update_fetchskupricing",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L16",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "lib_actions_sku_list",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L16",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "lib_actions_sku_list_listskus",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L16",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "lib_actions_sku_list_sku",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "lib_amazon_sp_api",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "lib_amazon_sp_api_marketplacecode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "lib_tools",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page",
+      "target": "lib_tools_pricingupdate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L350",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page_newpriceplansheet",
+      "target": "app_portal_tools_pricing_update_page_formatprice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L126",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page_pricingupdatepage",
+      "target": "app_portal_tools_pricing_update_page_formatprice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L135",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page_pricingupdatepage",
+      "target": "app_portal_tools_pricing_update_page_statusbadgeclass",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L139",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page_pricingupdatepage",
+      "target": "app_portal_tools_pricing_update_page_formatdate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "app/(portal)/tools/pricing-update/page.tsx",
+      "source_location": "L194",
+      "weight": 1.0,
+      "source": "app_portal_tools_pricing_update_page_newpriceplansheet",
+      "target": "lib_actions_sku_list_listskus"
     },
     {
       "relation": "contains",
@@ -12993,7 +12858,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "lib/actions/price-change-plans.ts",
-      "source_location": "L115",
+      "source_location": "L107",
       "weight": 1.0,
       "source": "lib_actions_price_change_plans",
       "target": "lib_actions_price_change_plans_cancelpriceplan",
@@ -13048,28 +12913,6 @@
       "weight": 1.0,
       "source": "lib_actions_price_change_plans",
       "target": "lib_amazon_sp_api",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/actions/price-change-plans.ts",
-      "source_location": "L6",
-      "weight": 1.0,
-      "source": "lib_actions_price_change_plans",
-      "target": "lib_amazon_sp_api_getskupricing",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/actions/price-change-plans.ts",
-      "source_location": "L6",
-      "weight": 1.0,
-      "source": "lib_actions_price_change_plans",
-      "target": "lib_amazon_sp_api_marketplace_ids",
       "confidence_score": 1.0
     },
     {
@@ -13165,7 +13008,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "lib/actions/price-change-plans.ts",
-      "source_location": "L116",
+      "source_location": "L108",
       "weight": 1.0,
       "source": "lib_actions_price_change_plans_cancelpriceplan",
       "target": "lib_actions_price_change_plans_requirestaff",
@@ -13176,7 +13019,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "lib/actions/price-change-plans.ts",
-      "source_location": "L52",
+      "source_location": "L53",
       "weight": 1.0,
       "source": "lib_actions_price_change_plans_createpriceplan",
       "target": "lib_actions_price_change_plans_requirestaff",
@@ -13221,18 +13064,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "lib/actions/price-change-plans.ts",
-      "source_location": "L65",
-      "weight": 1.0,
-      "source": "lib_actions_price_change_plans_createpriceplan",
-      "target": "lib_amazon_sp_api_getskupricing"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "lib/actions/price-change-plans.ts",
-      "source_location": "L77",
+      "source_location": "L69",
       "weight": 1.0,
       "source": "lib_actions_price_change_plans_createpriceplan",
       "target": "lib_supabase_service_createserviceclient"
@@ -13243,7 +13075,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "lib/actions/price-change-plans.ts",
-      "source_location": "L119",
+      "source_location": "L111",
       "weight": 1.0,
       "source": "lib_actions_price_change_plans_cancelpriceplan",
       "target": "lib_supabase_service_createserviceclient"
@@ -14675,16 +14507,6 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "lib/projects.ts",
-      "source_location": "L45",
-      "weight": 1.0,
-      "source": "lib_projects",
-      "target": "lib_projects_pricingupdate",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/projects.ts",
       "source_location": "L12",
       "weight": 1.0,
       "source": "lib_projects",
@@ -14695,7 +14517,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "lib/projects.ts",
-      "source_location": "L51",
+      "source_location": "L45",
       "weight": 1.0,
       "source": "lib_projects",
       "target": "lib_projects_projects",
@@ -14922,6 +14744,16 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "lib/tools.ts",
+      "source_location": "L45",
+      "weight": 1.0,
+      "source": "lib_tools",
+      "target": "lib_tools_pricingupdate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/tools.ts",
       "source_location": "L19",
       "weight": 1.0,
       "source": "lib_tools",
@@ -14942,7 +14774,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "lib/tools.ts",
-      "source_location": "L45",
+      "source_location": "L51",
       "weight": 1.0,
       "source": "lib_tools",
       "target": "lib_tools_tools",
