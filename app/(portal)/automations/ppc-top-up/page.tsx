@@ -582,6 +582,26 @@ function LiveProjectionCard({
         </CardAction>
       </CardHeader>
       <CardContent>
+        <div className="mb-2 flex items-center gap-4 text-xs text-muted-foreground">
+          {dayOffset === 0 && (
+            <span className="flex items-center gap-1.5">
+              <span
+                className="h-2.5 w-0 shrink-0 border-[1.5px] border-dashed"
+                style={{ borderColor: "var(--color-destructive)" }}
+              />
+              Now
+            </span>
+          )}
+          {availableRows.length > 0 && (
+            <span className="flex items-center gap-1.5">
+              <span
+                className="h-2.5 w-0 shrink-0 border-[1.5px] border-dashed"
+                style={{ borderColor: "#3b82f6" }}
+              />
+              Selected
+            </span>
+          )}
+        </div>
         <ChartContainer config={chartConfig} className="h-56 w-full">
           <LineChart data={rows}>
             <CartesianGrid vertical={false} />
@@ -593,7 +613,6 @@ function LiveProjectionCard({
                 x={currentSlotSgt()}
                 stroke="var(--color-destructive)"
                 strokeDasharray="4 4"
-                label={{ value: "Now", position: "top", fontSize: 11 }}
               />
             )}
             {availableRows.length > 0 && (
@@ -601,7 +620,6 @@ function LiveProjectionCard({
                 x={slot}
                 stroke="#3b82f6"
                 strokeDasharray="2 3"
-                label={{ value: "Selected", position: "top", fontSize: 11 }}
               />
             )}
             <Line

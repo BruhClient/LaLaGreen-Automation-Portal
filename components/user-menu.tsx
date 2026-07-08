@@ -9,8 +9,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
-export function UserMenu({ username }: { username: string }) {
+export function UserMenu({
+  username,
+  collapsed = false,
+}: {
+  username: string;
+  collapsed?: boolean;
+}) {
   const router = useRouter();
 
   async function handleLogout() {
@@ -21,11 +28,19 @@ export function UserMenu({ username }: { username: string }) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex w-full items-center gap-2 rounded-md p-2 text-left hover:bg-accent">
+      <DropdownMenuTrigger
+        title={collapsed ? username : undefined}
+        className={cn(
+          "flex w-full items-center gap-2 rounded-md p-2 text-left hover:bg-accent",
+          collapsed && "justify-center"
+        )}
+      >
         <Avatar size="sm">
           <AvatarFallback>{username.slice(0, 2).toUpperCase()}</AvatarFallback>
         </Avatar>
-        <span className="truncate text-sm text-foreground">{username}</span>
+        {!collapsed && (
+          <span className="truncate text-sm text-foreground">{username}</span>
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" side="top">
         <DropdownMenuItem variant="destructive" onClick={handleLogout}>
