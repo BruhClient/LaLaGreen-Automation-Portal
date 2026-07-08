@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { ArrowDown, ArrowUp, X } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, Clock, X, XCircle } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardAction } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Sheet,
@@ -25,7 +26,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { pricingUpdate } from "@/lib/projects";
+import { priceChangePlans } from "@/lib/projects";
 import { listSkus, type Sku } from "@/lib/actions/sku-list";
 import { fetchSkuPricing } from "@/lib/actions/pricing-update";
 import { listPricePlans, createPricePlan, cancelPricePlan, type PricePlan } from "@/lib/actions/price-change-plans";
@@ -33,8 +34,6 @@ import type { MarketplaceCode } from "@/lib/amazon/sp-api";
 
 const inputClass =
   "w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
-const primaryBtn =
-  "rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50";
 
 const DEFAULT_INCREMENT = "2";
 
@@ -57,7 +56,7 @@ function progressPercent(start: number, current: number, target: number): number
   return Math.min(100, Math.max(0, pct));
 }
 
-export default function PricingUpdatePage() {
+export default function PriceChangePlansPage() {
   const [plans, setPlans] = useState<PricePlan[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -92,7 +91,7 @@ export default function PricingUpdatePage() {
 
   return (
     <>
-      <PageHeader icon={pricingUpdate.icon} title={pricingUpdate.name} description={pricingUpdate.description} />
+      <PageHeader icon={priceChangePlans.icon} title={priceChangePlans.name} description={priceChangePlans.description} />
       <div className="space-y-6 p-6 md:p-8">
         {error && (
           <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -101,17 +100,19 @@ export default function PricingUpdatePage() {
         )}
 
         <Card>
-          <CardHeader className="grid-cols-1! sm:grid-cols-[1fr_auto]!">
-            <CardTitle>Price Change Plans</CardTitle>
-            <CardDescription>
-              Gradually move a SKU&apos;s Amazon sales price toward a target. n8n executes each step —
-              this page only defines the plan and shows progress.
-            </CardDescription>
-            <CardAction>
-              <button onClick={() => setSheetOpen(true)} className={primaryBtn}>
+          <CardHeader>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <CardTitle>Plans</CardTitle>
+                <CardDescription>
+                  Gradually move a SKU&apos;s Amazon sales price toward a target. n8n executes each step —
+                  this page only defines the plan and shows progress.
+                </CardDescription>
+              </div>
+              <Button onClick={() => setSheetOpen(true)} className="w-full sm:w-auto">
                 + New Plan
-              </button>
-            </CardAction>
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {plans === null ? (
@@ -178,16 +179,34 @@ function PlansList({
 
   return (
     <Tabs defaultValue="pending">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <TabsList>
-          <TabsTrigger value="pending">Pending ({pending.length})</TabsTrigger>
-          <TabsTrigger value="completed">Completed ({completed.length})</TabsTrigger>
-          <TabsTrigger value="cancelled">Cancelled ({cancelled.length})</TabsTrigger>
+          <TabsTrigger value="pending" className="gap-1.5" aria-label="Pending">
+            <Clock className="size-3.5" />
+            <span className="hidden sm:inline">Pending</span>
+            <Badge variant="secondary" className="px-1.5">
+              {pending.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="completed" className="gap-1.5" aria-label="Completed">
+            <CheckCircle2 className="size-3.5" />
+            <span className="hidden sm:inline">Completed</span>
+            <Badge variant="secondary" className="px-1.5">
+              {completed.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="cancelled" className="gap-1.5" aria-label="Cancelled">
+            <XCircle className="size-3.5" />
+            <span className="hidden sm:inline">Cancelled</span>
+            <Badge variant="secondary" className="px-1.5">
+              {cancelled.length}
+            </Badge>
+          </TabsTrigger>
         </TabsList>
         <select
           value={marketFilter}
           onChange={(e) => setMarketFilter(e.target.value as "ALL" | MarketplaceCode)}
-          className="rounded-md border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+          className="h-8 w-full rounded-md border border-input bg-background px-2.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring sm:w-auto"
         >
           <option value="ALL">All Marketplaces</option>
           <option value="US">US</option>
@@ -218,6 +237,14 @@ function PlansList({
   );
 }
 
+function MarketplaceBadge({ code }: { code: MarketplaceCode }) {
+  return (
+    <Badge variant="secondary" className="font-mono">
+      {code}
+    </Badge>
+  );
+}
+
 function HistoryTable({ plans, emptyText }: { plans: PricePlan[]; emptyText: string }) {
   if (plans.length === 0) return <p className="text-sm text-muted-foreground">{emptyText}</p>;
 
@@ -225,24 +252,26 @@ function HistoryTable({ plans, emptyText }: { plans: PricePlan[]; emptyText: str
     <div className="overflow-x-auto rounded-md border border-border">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-border text-left text-muted-foreground">
-            <th className="px-3 py-2 font-medium">SKU</th>
-            <th className="px-3 py-2 font-medium">Market</th>
-            <th className="px-3 py-2 font-medium">Start → Target</th>
-            <th className="px-3 py-2 font-medium">Created</th>
+          <tr className="border-b border-border bg-muted/40 text-left text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+            <th className="px-3 py-2">SKU</th>
+            <th className="px-3 py-2">Market</th>
+            <th className="px-3 py-2">Start → Target</th>
+            <th className="px-3 py-2">Created</th>
           </tr>
         </thead>
         <tbody>
           {plans.map((p) => (
-            <tr key={p.id} className="border-b border-border last:border-0">
-              <td className="px-3 py-2 font-mono">{p.sku}</td>
-              <td className="px-3 py-2">{p.marketplace}</td>
-              <td className="px-3 py-2">
+            <tr key={p.id} className="border-b border-border last:border-0 even:bg-muted/20 hover:bg-muted/30">
+              <td className="px-3 py-2.5 font-mono">{p.sku}</td>
+              <td className="px-3 py-2.5">
+                <MarketplaceBadge code={p.marketplace} />
+              </td>
+              <td className="px-3 py-2.5">
                 {formatPrice(p.start_price)}
                 <span className="text-muted-foreground"> → </span>
                 {formatPrice(p.target_price)}
               </td>
-              <td className="px-3 py-2 text-muted-foreground">{formatDate(p.created_at)}</td>
+              <td className="px-3 py-2.5 text-muted-foreground">{formatDate(p.created_at)}</td>
             </tr>
           ))}
         </tbody>
@@ -261,7 +290,7 @@ function PlanCard({ plan: p, disabled, onCancel }: { plan: PricePlan; disabled: 
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-mono text-sm font-medium">{p.sku}</span>
-          <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{p.marketplace}</span>
+          <MarketplaceBadge code={p.marketplace} />
         </div>
         <Button
           variant="ghost"
@@ -538,9 +567,9 @@ function NewPricePlanSheet({
         </div>
 
         <SheetFooter>
-          <button onClick={handleCreate} disabled={!canCreate} className={primaryBtn}>
+          <Button onClick={handleCreate} disabled={!canCreate}>
             {isPending ? "Creating…" : "Create Plan"}
-          </button>
+          </Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>

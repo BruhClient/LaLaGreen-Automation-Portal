@@ -42,10 +42,10 @@ export const ppcTopUp = defineProject({
   icon: Wallet,
 });
 
-export const pricingUpdate = defineProject({
-  name: "Pricing Update",
+export const priceChangePlans = defineProject({
+  name: "Price Change Plans",
   description: "Plan gradual Amazon sales price changes, executed step-by-step by n8n",
   icon: Tag,
 });
 
-export const projects: AutomationProject[] = [ppcTopUp, pricingUpdate];
+export const projects: AutomationProject[] = [ppcTopUp, priceChangePlans];
