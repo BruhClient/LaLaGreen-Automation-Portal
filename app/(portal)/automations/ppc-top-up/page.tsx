@@ -479,17 +479,33 @@ function LiveProjectionCard({
 
   const { pmDate, amDate } = resolveCycleDates(country.reset_time, dayOffset);
 
+  const viewedDate = shiftDateSgt(todaySgt(), dayOffset);
+
   const availableRows = useMemo(
-    () => rows.filter((r) => r.date > todaySgt() || (r.date === todaySgt() && r.slot > currentSlotSgt())),
-    [rows]
+    () =>
+      CANONICAL_SLOTS.map((slot) => ({ slot, date: viewedDate })).filter(
+        (r) => r.date > todaySgt() || (r.date === todaySgt() && r.slot > currentSlotSgt())
+      ),
+    [viewedDate]
+  );
+
+  const dayTopUps = useMemo(
+    () => topups.filter((t) => t.target_date === viewedDate),
+    [topups, viewedDate]
   );
 
   const [prevDayOffset, setPrevDayOffset] = useState(dayOffset);
   if (prevDayOffset !== dayOffset) {
+    const movedBackward = dayOffset < prevDayOffset;
     setPrevDayOffset(dayOffset);
-    const first = availableRows[0];
-    if (first) setSlot(first.slot);
+    const target = movedBackward ? availableRows[availableRows.length - 1] : availableRows[0];
+    if (target) setSlot(target.slot);
   }
+
+  const selectedIndex = Math.max(
+    availableRows.findIndex((r) => r.slot === slot),
+    0
+  );
 
   function handleCreate() {
     const target = availableRows.find((r) => r.slot === slot)?.date;
@@ -580,6 +596,14 @@ function LiveProjectionCard({
                 label={{ value: "Now", position: "top", fontSize: 11 }}
               />
             )}
+            {availableRows.length > 0 && (
+              <ReferenceLine
+                x={slot}
+                stroke="#3b82f6"
+                strokeDasharray="2 3"
+                label={{ value: "Selected", position: "top", fontSize: 11 }}
+              />
+            )}
             <Line
               dataKey="runningTotal"
               type="monotone"
@@ -611,17 +635,41 @@ function LiveProjectionCard({
         <div className="flex flex-wrap items-end gap-3">
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">Slot</label>
-            <select
-              value={slot}
-              onChange={(e) => setSlot(e.target.value)}
-              className="rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              {availableRows.map((r) => (
-                <option key={r.slot} value={r.slot}>
-                  {r.slot} · {r.date}
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  if (selectedIndex > 0) {
+                    setSlot(availableRows[selectedIndex - 1].slot);
+                  } else if (dayOffset > 0) {
+                    setDayOffset((d) => d - 1);
+                  }
+                }}
+                disabled={selectedIndex <= 0 && dayOffset <= 0}
+                className="rounded-md px-2 py-1 text-xs font-medium hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                title="Previous slot"
+              >
+                ←
+              </button>
+              <span className="min-w-28 rounded-md border border-input bg-background px-2 py-1.5 text-center text-sm">
+                {availableRows[selectedIndex]?.slot} · {availableRows[selectedIndex]?.date}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  if (selectedIndex < availableRows.length - 1) {
+                    setSlot(availableRows[selectedIndex + 1].slot);
+                  } else {
+                    setDayOffset((d) => Math.min(d + 1, 5));
+                  }
+                }}
+                disabled={selectedIndex >= availableRows.length - 1 && dayOffset >= 5}
+                className="rounded-md px-2 py-1 text-xs font-medium hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                title="Next slot"
+              >
+                →
+              </button>
+            </div>
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">
@@ -669,14 +717,14 @@ function LiveProjectionCard({
                     </td>
                   </tr>
                 ))
-              ) : topups.length === 0 ? (
+              ) : dayTopUps.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">
                     No manual top-ups yet
                   </td>
                 </tr>
               ) : (
-                topups.map((t) => (
+                dayTopUps.map((t) => (
                   <tr key={t.id} className="border-b border-border last:border-0">
                     <td className="px-3 py-2 text-muted-foreground">{t.target_date}</td>
                     <td className="px-3 py-2 font-mono text-xs text-muted-foreground">
