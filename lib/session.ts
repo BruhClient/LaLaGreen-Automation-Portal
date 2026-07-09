@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 import { cookies } from "next/headers";
+import { type Role, toRole } from "@/lib/roles";
 
 const COOKIE_NAME = "portal_session";
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7; // 7 days
@@ -14,7 +15,7 @@ function getSecretKey() {
 
 export interface SessionPayload extends JWTPayload {
   username: string;
-  role: "admin" | "user";
+  role: Role;
 }
 
 export async function signSession(payload: SessionPayload): Promise<string> {
@@ -33,7 +34,7 @@ export async function verifySessionToken(
     if (typeof payload.username !== "string") return null;
     return {
       username: payload.username,
-      role: (payload.role === "admin" ? "admin" : "user") as "admin" | "user",
+      role: toRole(payload.role),
     };
   } catch {
     return null;

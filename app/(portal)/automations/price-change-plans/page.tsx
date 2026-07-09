@@ -28,14 +28,21 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { priceChangePlans } from "@/lib/projects";
 import { listSkus, type Sku } from "@/lib/actions/sku-list";
-import { fetchSkuPricing } from "@/lib/actions/pricing-update";
+import { fetchSkuDetail } from "@/lib/actions/pricing-update";
 import { listPricePlans, createPricePlan, cancelPricePlan, type PricePlan } from "@/lib/actions/price-change-plans";
-import type { MarketplaceCode } from "@/lib/amazon/sp-api";
+import type { MarketplaceCode, SkuDetail } from "@/lib/amazon/sp-api";
 
 const inputClass =
   "w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
 
 const DEFAULT_INCREMENT = "2";
+
+const PRICE_TYPES = ["your_price", "sale_price"] as const;
+type PriceTypeOption = (typeof PRICE_TYPES)[number];
+
+function priceTypeLabel(type: PriceTypeOption) {
+  return type === "sale_price" ? "Sale Price" : "Your Price";
+}
 
 function formatPrice(amount: number | null) {
   return amount === null ? "—" : `$${amount.toFixed(2)}`;
@@ -291,6 +298,7 @@ function PlanCard({ plan: p, disabled, onCancel }: { plan: PricePlan; disabled: 
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-mono text-sm font-medium">{p.sku}</span>
           <MarketplaceBadge code={p.marketplace} />
+          <Badge variant="outline">{priceTypeLabel(p.price_type)}</Badge>
         </div>
         <Button
           variant="ghost"
@@ -317,8 +325,9 @@ function PlanCard({ plan: p, disabled, onCancel }: { plan: PricePlan; disabled: 
           <p className="text-lg font-semibold">{formatPrice(p.target_price)}</p>
         </div>
         <div>
-          <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Days Left</p>
-          <p className="text-lg font-semibold">{days}</p>
+          <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Complete</p>
+          <p className="text-lg font-semibold">{Math.round(pct)}%</p>
+          <p className="text-xs text-muted-foreground">{days} day{days === 1 ? "" : "s"} left</p>
         </div>
       </div>
 
@@ -341,6 +350,52 @@ function PlanCard({ plan: p, disabled, onCancel }: { plan: PricePlan; disabled: 
   );
 }
 
+function SkuDetailPanel({ detail, onRefresh }: { detail: SkuDetail; onRefresh: () => void }) {
+  const priceRows: { label: string; value: number | null }[] = [
+    { label: "Your Price", value: detail.salesPrice },
+    { label: "Sale Price", value: detail.discountedPrice },
+    { label: "List Price", value: detail.listPrice },
+    { label: "Featured Price", value: detail.featuredPrice },
+    { label: "Min Seller Allowed", value: detail.minSellerAllowedPrice },
+    { label: "Max Seller Allowed", value: detail.maxSellerAllowedPrice },
+  ];
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          {detail.productName ? (
+            <p className="font-medium leading-snug">{detail.productName}</p>
+          ) : (
+            <p className="font-mono text-sm">{detail.sku}</p>
+          )}
+          {detail.productDescription && (
+            <p className="mt-1 line-clamp-3 text-xs text-muted-foreground">{detail.productDescription}</p>
+          )}
+        </div>
+        <button onClick={onRefresh} className="shrink-0 text-xs text-primary hover:underline">
+          Refresh
+        </button>
+      </div>
+
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
+        {priceRows.map((row) => (
+          <div key={row.label}>
+            <dt className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">{row.label}</dt>
+            <dd className="font-medium">{formatPrice(row.value)}</dd>
+          </div>
+        ))}
+      </dl>
+
+      {detail.salesPrice === null && (
+        <p className="text-xs text-muted-foreground">
+          {detail.error ?? "No current sales price for this SKU — you can't create a plan until it has one."}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function NewPricePlanSheet({
   open,
   onOpenChange,
@@ -354,8 +409,14 @@ function NewPricePlanSheet({
   const [search, setSearch] = useState("");
   const [selectedSku, setSelectedSku] = useState<string | null>(null);
   const [marketplace, setMarketplace] = useState<MarketplaceCode>("US");
-  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+  const [priceType, setPriceType] = useState<PriceTypeOption>("your_price");
+  const [detail, setDetail] = useState<SkuDetail | null>(null);
   const [priceError, setPriceError] = useState<string | null>(null);
+  const priceLabel = priceTypeLabel(priceType);
+  // Mirror the server's start-price selection: a Sale Price plan starts from the live sale price,
+  // falling back to Your Price when no sale is active.
+  const currentPrice =
+    priceType === "sale_price" ? detail?.discountedPrice ?? detail?.salesPrice ?? null : detail?.salesPrice ?? null;
   const [targetPrice, setTargetPrice] = useState("");
   const [increment, setIncrement] = useState(DEFAULT_INCREMENT);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -371,7 +432,8 @@ function NewPricePlanSheet({
     setSearch("");
     setSelectedSku(null);
     setMarketplace("US");
-    setCurrentPrice(null);
+    setPriceType("your_price");
+    setDetail(null);
     setPriceError(null);
     setTargetPrice("");
     setIncrement(DEFAULT_INCREMENT);
@@ -380,7 +442,7 @@ function NewPricePlanSheet({
 
   function selectSku(sku: string) {
     setSelectedSku(sku);
-    setCurrentPrice(null);
+    setDetail(null);
     setPriceError(null);
   }
 
@@ -388,20 +450,15 @@ function NewPricePlanSheet({
     (sku: string, mp: MarketplaceCode) => {
       startTransition(async () => {
         setPriceError(null);
-        setCurrentPrice(null);
-        const { data, error } = await fetchSkuPricing([sku], mp);
-        if (error) {
-          setPriceError(error);
-          setCurrentPrice(null);
+        setDetail(null);
+        const { data, error } = await fetchSkuDetail(sku, mp);
+        if (error || !data) {
+          setPriceError(error ?? "Failed to fetch SKU detail");
         } else {
-          const result = data?.[0];
-          if (!result || result.salesPrice === null) {
-            setPriceError(result?.error ?? "No sales price available for this SKU");
-            setCurrentPrice(null);
-          } else {
-            setCurrentPrice(result.salesPrice);
-            setPriceError(null);
-          }
+          // Always show whatever the listing has. A missing sales price is surfaced inside
+          // the panel and the create gate stays disabled — it's not a hard error.
+          setDetail(data);
+          setPriceError(null);
         }
       });
     },
@@ -432,6 +489,7 @@ function NewPricePlanSheet({
       const { error } = await createPricePlan({
         sku: selectedSku,
         marketplace,
+        priceType,
         targetPrice: targetNum,
         increment: incrementNum,
       });
@@ -457,7 +515,7 @@ function NewPricePlanSheet({
         <SheetHeader>
           <SheetTitle>New Price Change Plan</SheetTitle>
           <SheetDescription>
-            Pick a SKU, confirm its current sales price, then set a target and step size.
+            Pick a SKU, choose which price to move, confirm its current value, then set a target and step size.
           </SheetDescription>
         </SheetHeader>
 
@@ -510,10 +568,31 @@ function NewPricePlanSheet({
             </select>
           </div>
 
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Price to update</label>
+            <div className="grid grid-cols-2 gap-1 rounded-md border border-input p-1">
+              {PRICE_TYPES.map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setPriceType(type)}
+                  className={`rounded px-2.5 py-1.5 text-sm font-medium transition-colors ${
+                    priceType === type ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"
+                  }`}
+                >
+                  {priceTypeLabel(type)}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {selectedSku && (
-            <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm">
+            <div className="rounded-md border border-border bg-muted/30 px-3 py-2.5 text-sm">
               {isPending ? (
-                <Skeleton className="h-5 w-40" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-16 w-full" />
+                </div>
               ) : priceError ? (
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-destructive">{priceError}</span>
@@ -521,22 +600,15 @@ function NewPricePlanSheet({
                     Retry
                   </button>
                 </div>
-              ) : currentPrice !== null ? (
-                <div className="flex items-center justify-between gap-2">
-                  <span>
-                    Current sales price: <span className="font-medium">{formatPrice(currentPrice)}</span>
-                  </span>
-                  <button onClick={() => fetchPrice(selectedSku, marketplace)} className="shrink-0 text-xs text-primary hover:underline">
-                    Refresh
-                  </button>
-                </div>
+              ) : detail ? (
+                <SkuDetailPanel detail={detail} onRefresh={() => fetchPrice(selectedSku, marketplace)} />
               ) : null}
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Target price ($)</label>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Target {priceLabel} ($)</label>
               <input
                 type="number"
                 step="0.01"
@@ -544,6 +616,11 @@ function NewPricePlanSheet({
                 value={targetPrice}
                 onChange={(e) => setTargetPrice(e.target.value)}
               />
+              {currentPrice !== null && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Current {priceLabel}: <span className="font-medium">{formatPrice(currentPrice)}</span>
+                </p>
+              )}
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-muted-foreground">Increment ($)</label>
@@ -559,7 +636,7 @@ function NewPricePlanSheet({
 
           {direction && steps !== null && (
             <p className="text-sm text-muted-foreground">
-              This will {direction} the price from {formatPrice(currentPrice)} to {formatPrice(targetNum)} in steps
+              This will {direction} the {priceLabel} from {formatPrice(currentPrice)} to {formatPrice(targetNum)} in steps
               of up to {formatPrice(incrementNum)} — about {steps} day{steps === 1 ? "" : "s"} to reach the target
               (n8n applies one step per day).
             </p>

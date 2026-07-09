@@ -3,15 +3,18 @@
 import { useEffect, useState } from "react";
 import { SidebarContent } from "@/components/sidebar-content";
 import { cn } from "@/lib/utils";
+import type { Role, PermissionSet } from "@/lib/roles";
 
 const COLLAPSE_KEY = "sidebar-collapsed";
 
 export function Sidebar({
   username,
   role,
+  permissions,
 }: {
   username: string;
-  role: "admin" | "user";
+  role: Role;
+  permissions: PermissionSet;
 }) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -37,6 +40,7 @@ export function Sidebar({
       <SidebarContent
         username={username}
         role={role}
+        permissions={permissions}
         collapsed={collapsed}
         onToggleCollapse={toggleCollapsed}
       />

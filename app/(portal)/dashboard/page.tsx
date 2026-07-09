@@ -1,11 +1,26 @@
 import Link from "next/link";
-import { ppcTopUp } from "@/lib/projects";
+import { ppcTopUp, projects } from "@/lib/projects";
+import { tools } from "@/lib/tools";
+import { configurationItems } from "@/lib/configuration";
 import { getSession } from "@/lib/session";
+import { getMyPermissions } from "@/lib/permissions";
+import { filterItems, isAllowed } from "@/lib/roles";
 import PpcTopUpCharts from "@/components/ppc-top-up-chart";
 
 export default async function DashboardPage() {
   const session = await getSession();
   const firstName = session?.username ?? "there";
+
+  const { role, permissions } = await getMyPermissions();
+
+  const accessGroups = [
+    { label: "Automations", items: filterItems("automations", projects, role, permissions) },
+    { label: "Tools", items: filterItems("tools", tools, role, permissions) },
+    { label: "Configuration", items: filterItems("configuration", configurationItems, role, permissions) },
+  ].filter((group) => group.items.length > 0);
+
+  const hasAnyAccess = accessGroups.length > 0;
+  const canSeePpc = isAllowed(role, permissions, "automations", ppcTopUp.id);
 
   return (
     <div className="p-6 md:p-8">
@@ -13,18 +28,67 @@ export default async function DashboardPage() {
         Welcome back, {firstName}
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Here&apos;s an overview of your automations.
+        Here&apos;s what you have access to.
       </p>
 
-      <div className="mt-8 flex items-center justify-between">
-        <h3 className="text-sm font-medium text-muted-foreground">PPC Top-Up</h3>
-        <Link href={ppcTopUp.href} className="text-xs font-medium text-primary hover:underline">
-          View all →
-        </Link>
+      {/* Your access — shows every automation, tool, and configuration item the
+          signed-in user may open. Admins see everything. */}
+      <div className="mt-6 rounded-lg border border-border bg-card p-5">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-foreground">Your access</h3>
+          {role === "admin" && (
+            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+              Full access
+            </span>
+          )}
+        </div>
+
+        {hasAnyAccess ? (
+          <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {accessGroups.map((group) => (
+              <div key={group.label}>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {group.label}
+                </p>
+                <ul className="space-y-1">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <li key={item.id}>
+                        <Link
+                          href={item.href}
+                          className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-accent"
+                        >
+                          <Icon className="size-4 shrink-0 text-muted-foreground" />
+                          <span className="truncate">{item.name}</span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-3 text-sm text-muted-foreground">
+            You don&apos;t have access to any tools yet. Ask an admin to grant you access.
+          </p>
+        )}
       </div>
-      <div className="mt-3">
-        <PpcTopUpCharts />
-      </div>
+
+      {canSeePpc && (
+        <>
+          <div className="mt-8 flex items-center justify-between">
+            <h3 className="text-sm font-medium text-muted-foreground">PPC Top-Up</h3>
+            <Link href={ppcTopUp.href} className="text-xs font-medium text-primary hover:underline">
+              View all →
+            </Link>
+          </div>
+          <div className="mt-3">
+            <PpcTopUpCharts />
+          </div>
+        </>
+      )}
     </div>
   );
 }

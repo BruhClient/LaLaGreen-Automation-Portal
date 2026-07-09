@@ -1,7 +1,7 @@
 "use server";
 
 import { getSession } from "@/lib/session";
-import { getSkuPricing, MARKETPLACE_IDS, type MarketplaceCode } from "@/lib/amazon/sp-api";
+import { getSkuPricing, getSkuDetail, MARKETPLACE_IDS, type MarketplaceCode } from "@/lib/amazon/sp-api";
 
 async function requireStaff() {
   const session = await getSession();
@@ -20,5 +20,19 @@ export async function fetchSkuPricing(skus: string[], marketplace: MarketplaceCo
     return { data, error: null };
   } catch (e) {
     return { data: null, error: e instanceof Error ? e.message : "Failed to fetch pricing" };
+  }
+}
+
+export async function fetchSkuDetail(sku: string, marketplace: MarketplaceCode) {
+  const { error } = await requireStaff();
+  if (error) return { data: null, error };
+
+  if (!sku.trim()) return { data: null, error: "No SKU selected" };
+
+  try {
+    const data = await getSkuDetail(sku, MARKETPLACE_IDS[marketplace]);
+    return { data, error: null };
+  } catch (e) {
+    return { data: null, error: e instanceof Error ? e.message : "Failed to fetch SKU detail" };
   }
 }

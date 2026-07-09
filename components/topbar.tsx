@@ -5,13 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { SidebarContent } from "@/components/sidebar-content";
 import { useState } from "react";
+import type { Role, PermissionSet } from "@/lib/roles";
 
 export function Topbar({
   username,
   role,
+  permissions,
 }: {
   username: string;
-  role: "admin" | "user";
+  role: Role;
+  permissions: PermissionSet;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -28,7 +31,11 @@ export function Topbar({
         </Button>
         <SheetContent side="left" className="w-64 p-0">
           <SheetTitle className="sr-only">Navigation</SheetTitle>
-          <SidebarContent username={username} role={role} />
+          <SidebarContent
+            username={username}
+            role={role}
+            permissions={permissions}
+          />
         </SheetContent>
       </Sheet>
       <span className="text-sm font-semibold text-foreground">

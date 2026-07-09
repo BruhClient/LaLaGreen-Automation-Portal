@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
+import { getMyPermissions } from "@/lib/permissions";
+import { isAllowed } from "@/lib/roles";
 import { createClient } from "@/lib/supabase/server";
 import { buildSponsoredBrandsBulk, type CampaignInput, type Country } from "@/lib/xlsx/buildSponsoredBrandsBulk";
 
@@ -20,6 +22,11 @@ type IncomingCampaign = {
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { role, permissions } = await getMyPermissions();
+  if (!isAllowed(role, permissions, "tools", "sponsored-brands-upload")) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const body = await req.json();
   const { campaigns } = body as { campaigns: IncomingCampaign[] };

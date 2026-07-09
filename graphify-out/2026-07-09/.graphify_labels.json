@@ -7,7 +7,6 @@
   "5": "shadcn/ui Component Registry Config",
   "6": "PPC Schedule AI Import",
   "7": "TypeScript Config",
-  "8": "sheet.tsx",
   "9": "Dashboard, Projects & Tools Registry",
   "10": "Chart UI Primitive (Recharts wrapper)",
   "11": "Sponsored Brands Bulk XLSX Builder",
@@ -24,7 +23,6 @@
   "22": "Window Icon Asset",
   "23": "LaLaGreen Automation Portal — Developer Guide",
   "24": "sp-api.ts",
-  "25": "utils.ts",
   "26": "sku-list.ts",
   "27": "README.md",
   "28": "AGENTS.md",
@@ -39,8 +37,5 @@
   "37": "Geist Font (next/font)",
   "38": "Next.js Documentation",
   "39": "create-next-app Bootstrapped Project",
-  "40": "Vercel Platform",
-  "41": "chat-panel.tsx",
-  "42": "tabs.tsx",
-  "43": "badge.tsx"
+  "40": "Vercel Platform"
 }

@@ -5,11 +5,12 @@ import { Users } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getStaffDirectory } from "@/lib/actions/staff";
+import { type Role, ROLE_LABELS } from "@/lib/roles";
 
 type DirectoryEntry = {
   id: string;
   username: string;
-  role: "admin" | "user";
+  role: Role;
 };
 
 export default function TeamPage() {
@@ -66,10 +67,12 @@ export default function TeamPage() {
                           className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
                             member.role === "admin"
                               ? "bg-primary/10 text-primary"
-                              : "bg-muted text-muted-foreground"
+                              : member.role === "moderator"
+                                ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                                : "bg-muted text-muted-foreground"
                           }`}
                         >
-                          {member.role === "admin" ? "Admin" : "Staff"}
+                          {ROLE_LABELS[member.role]}
                         </span>
                       </td>
                     </tr>

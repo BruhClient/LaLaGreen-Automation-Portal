@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { createClient } from "@/lib/supabase/server";
 import { signSession, setSessionCookie } from "@/lib/session";
+import { toRole } from "@/lib/roles";
 
 export async function POST(request: NextRequest) {
   const { username, password } = await request.json();
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
 
   const token = await signSession({
     username: staff.username,
-    role: staff.role as "admin" | "user",
+    role: toRole(staff.role),
   });
   await setSessionCookie(token);
 

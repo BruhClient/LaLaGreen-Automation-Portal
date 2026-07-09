@@ -15,7 +15,22 @@ export interface PricingResult {
   sku: string;
   listPrice: number | null;
   salesPrice: number | null;
+  discountedPrice: number | null;
   featuredPrice: number | null;
+  error?: string;
+}
+
+export interface SkuDetail {
+  sku: string;
+  asin: string | null;
+  salesPrice: number | null;
+  discountedPrice: number | null;
+  listPrice: number | null;
+  featuredPrice: number | null;
+  minSellerAllowedPrice: number | null;
+  maxSellerAllowedPrice: number | null;
+  productName: string | null;
+  productDescription: string | null;
   error?: string;
 }
 
@@ -82,7 +97,7 @@ interface PricingApiResponse {
   payload: PricingApiItem[];
 }
 
-async function callSpApi(path: string, params: Record<string, string>): Promise<PricingApiResponse> {
+async function callSpApiJson<T>(path: string, params: Record<string, string>): Promise<T> {
   const accessToken = await getAccessToken();
   const url = `${SP_API_HOST}${path}?${new URLSearchParams(params).toString()}`;
 
@@ -96,6 +111,10 @@ async function callSpApi(path: string, params: Record<string, string>): Promise<
     await sleep(1000 * 2 ** attempt);
   }
   throw lastError;
+}
+
+function callSpApi(path: string, params: Record<string, string>): Promise<PricingApiResponse> {
+  return callSpApiJson<PricingApiResponse>(path, params);
 }
 
 /**
@@ -139,7 +158,7 @@ function extractFeaturedPricing(payload: PricingApiItem[], results: Map<string, 
 export async function getSkuPricing(skus: string[], marketplaceId: string): Promise<PricingResult[]> {
   const cleaned = [...new Set(skus.map((s) => s.trim()).filter(Boolean))];
   const results = new Map<string, PricingResult>(
-    cleaned.map((sku) => [sku, { sku, listPrice: null, salesPrice: null, featuredPrice: null }])
+    cleaned.map((sku) => [sku, { sku, listPrice: null, salesPrice: null, discountedPrice: null, featuredPrice: null }])
   );
 
   const chunks = chunk(cleaned, CHUNK_SIZE);
@@ -176,4 +195,106 @@ export async function getSkuPricing(skus: string[], marketplaceId: string): Prom
   }
 
   return cleaned.map((sku) => results.get(sku)!);
+}
+
+// The Listings Items API returns the seller's own submitted listing. `attributes` is a
+// map of attributeName -> array of values, but the exact nesting varies by product type,
+// so every extraction below is defensive and falls back to null.
+interface ListingsItemResponse {
+  sku?: string;
+  summaries?: { marketplaceId?: string; itemName?: string; asin?: string }[];
+  attributes?: Record<string, unknown[]>;
+}
+
+function firstAttr(attributes: Record<string, unknown[]> | undefined, key: string): Record<string, unknown> | null {
+  const value = attributes?.[key]?.[0];
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : null;
+}
+
+function asNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+/** Reads a price sub-attribute of purchasable_offer (our_price, min/max seller allowed), with a top-level fallback. */
+function extractOfferPrice(attributes: Record<string, unknown[]> | undefined, key: string): number | null {
+  const offer = firstAttr(attributes, "purchasable_offer");
+  const nested = offer?.[key];
+  if (Array.isArray(nested)) {
+    const schedule = (nested[0] as Record<string, unknown>)?.schedule;
+    if (Array.isArray(schedule)) {
+      const amount = asNumber((schedule[0] as Record<string, unknown>)?.value_with_tax);
+      if (amount !== null) return amount;
+    }
+  }
+  // Fallback: some product types expose it as a top-level attribute.
+  const topLevel = firstAttr(attributes, key);
+  return asNumber(topLevel?.value ?? topLevel?.value_with_tax);
+}
+
+function extractStringAttr(attributes: Record<string, unknown[]> | undefined, key: string): string | null {
+  const attr = firstAttr(attributes, key);
+  const value = attr?.value;
+  return typeof value === "string" && value.trim() !== "" ? value : null;
+}
+
+/**
+ * Combines the Product Pricing API (sales/list/featured price) with the Listings Items API
+ * (product name/description + seller-allowed min/max prices) for a single SKU. The listings
+ * lookup is best-effort — a failure there leaves those fields null but keeps the prices.
+ */
+export async function getSkuDetail(sku: string, marketplaceId: string): Promise<SkuDetail> {
+  const [pricing] = await getSkuPricing([sku], marketplaceId);
+
+  const detail: SkuDetail = {
+    sku,
+    asin: null,
+    salesPrice: pricing.salesPrice,
+    discountedPrice: pricing.discountedPrice,
+    listPrice: pricing.listPrice,
+    featuredPrice: pricing.featuredPrice,
+    minSellerAllowedPrice: null,
+    maxSellerAllowedPrice: null,
+    productName: null,
+    productDescription: null,
+    error: pricing.error,
+  };
+
+  try {
+    const sellerId = process.env.SELLER_ID!;
+    const listing = await callSpApiJson<ListingsItemResponse>(
+      `/listings/2021-08-01/items/${sellerId}/${encodeURIComponent(sku)}`,
+      { marketplaceIds: marketplaceId, includedData: "summaries,attributes" }
+    );
+
+    const attrs = listing.attributes;
+    detail.asin = listing.summaries?.[0]?.asin ?? null;
+    detail.productName = listing.summaries?.[0]?.itemName ?? extractStringAttr(attrs, "item_name");
+    detail.productDescription = extractStringAttr(attrs, "product_description");
+    detail.minSellerAllowedPrice = extractOfferPrice(attrs, "minimum_seller_allowed_price");
+    detail.maxSellerAllowedPrice = extractOfferPrice(attrs, "maximum_seller_allowed_price");
+
+    // The promotional Sale Price lives in purchasable_offer.discounted_price (same nested
+    // schedule shape extractOfferPrice already handles). Null when no sale is configured.
+    detail.discountedPrice = extractOfferPrice(attrs, "discounted_price");
+
+    if (detail.listPrice === null) {
+      const listPriceAttr = firstAttr(attrs, "list_price");
+      detail.listPrice = asNumber(listPriceAttr?.value_with_tax ?? listPriceAttr?.value);
+    }
+
+    // The Product Pricing API only returns a sales price when there's a buyable offer. For
+    // inactive / out-of-stock listings it reports "No active offer", but the seller's own
+    // configured price still lives in the listing — use it so a plan can still be created.
+    if (detail.salesPrice === null) {
+      const listingPrice = extractOfferPrice(attrs, "our_price");
+      if (listingPrice !== null) {
+        detail.salesPrice = listingPrice;
+        detail.error = undefined;
+      }
+    }
+  } catch {
+    // Best-effort: keep the pricing fields; leave name/description/min/max as null.
+  }
+
+  return detail;
 }

@@ -3,12 +3,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getSession } from "@/lib/session";
-import { getSkuPricing, MARKETPLACE_IDS, type MarketplaceCode } from "@/lib/amazon/sp-api";
+import { getSkuDetail, MARKETPLACE_IDS, type MarketplaceCode } from "@/lib/amazon/sp-api";
+
+export type PriceType = "your_price" | "sale_price";
 
 export interface PricePlan {
   id: string;
   sku: string;
   marketplace: MarketplaceCode;
+  price_type: PriceType;
   start_price: number;
   current_price: number;
   target_price: number;
@@ -22,7 +25,7 @@ export interface PricePlan {
 }
 
 const PLAN_COLUMNS =
-  "id, sku, marketplace, start_price, current_price, target_price, increment, direction, status, created_by, created_at, updated_at, cancelled_at";
+  "id, sku, marketplace, price_type, start_price, current_price, target_price, increment, direction, status, created_by, created_at, updated_at, cancelled_at";
 
 async function requireStaff() {
   const session = await getSession();
@@ -46,15 +49,19 @@ export async function listPricePlans(): Promise<{ data: PricePlan[] | null; erro
 export async function createPricePlan(input: {
   sku: string;
   marketplace: MarketplaceCode;
+  priceType: PriceType;
   targetPrice: number;
   increment: number;
 }): Promise<{ data: PricePlan | null; error: string | null }> {
   const { session, error } = await requireStaff();
   if (error) return { data: null, error };
 
-  const { sku, marketplace, targetPrice, increment } = input;
+  const { sku, marketplace, priceType, targetPrice, increment } = input;
 
   if (!sku) return { data: null, error: "SKU is required" };
+  if (priceType !== "your_price" && priceType !== "sale_price") {
+    return { data: null, error: "Invalid price type" };
+  }
   if (!Number.isFinite(increment) || increment <= 0) {
     return { data: null, error: "Increment must be greater than 0" };
   }
@@ -62,12 +69,16 @@ export async function createPricePlan(input: {
     return { data: null, error: "Target price is required" };
   }
 
-  const [pricing] = await getSkuPricing([sku], MARKETPLACE_IDS[marketplace]);
-  const startPrice = pricing?.salesPrice ?? null;
+  const detail = await getSkuDetail(sku, MARKETPLACE_IDS[marketplace]);
+  // For a Sale Price plan, start from the live promotional sale price; when no sale is active
+  // fall back to Your Price, since a new sale logically begins at the current selling price.
+  const startPrice =
+    priceType === "sale_price" ? detail.discountedPrice ?? detail.salesPrice : detail.salesPrice;
   if (startPrice === null) {
+    const label = priceType === "sale_price" ? "sale price" : "price";
     return {
       data: null,
-      error: pricing?.error ?? "No active offer on Amazon — a plan can't be created for this SKU",
+      error: detail.error ?? `No current ${label} on Amazon — a plan can't be created for this SKU`,
     };
   }
   if (targetPrice === startPrice) {
@@ -80,13 +91,15 @@ export async function createPricePlan(input: {
     .from("price_change_plans")
     .select("id")
     .eq("sku", sku)
+    .eq("price_type", priceType)
     .eq("status", "active")
     .maybeSingle();
   if (existingError) return { data: null, error: existingError.message };
   if (existingActive) {
+    const label = priceType === "sale_price" ? "Sale Price" : "Your Price";
     return {
       data: null,
-      error: "An active plan already exists for this SKU — cancel it first.",
+      error: `An active ${label} plan already exists for this SKU — cancel it first.`,
     };
   }
 
@@ -97,6 +110,7 @@ export async function createPricePlan(input: {
     .insert({
       sku,
       marketplace,
+      price_type: priceType,
       start_price: startPrice,
       current_price: startPrice,
       target_price: targetPrice,

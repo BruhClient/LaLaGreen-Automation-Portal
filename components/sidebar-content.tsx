@@ -16,19 +16,36 @@ import { configurationItems } from "@/lib/configuration";
 import { cn } from "@/lib/utils";
 import { UserMenu } from "@/components/user-menu";
 import { Separator } from "@/components/ui/separator";
+import {
+  type Role,
+  type PermissionSet,
+  canManageUsers,
+  filterItems,
+} from "@/lib/roles";
 
 export function SidebarContent({
   username,
   role,
+  permissions,
   collapsed = false,
   onToggleCollapse,
 }: {
   username: string;
-  role: "admin" | "user";
+  role: Role;
+  permissions: PermissionSet;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
 }) {
   const pathname = usePathname();
+
+  const allowedProjects = filterItems("automations", projects, role, permissions);
+  const allowedTools = filterItems("tools", tools, role, permissions);
+  const allowedConfiguration = filterItems(
+    "configuration",
+    configurationItems,
+    role,
+    permissions
+  );
 
   return (
     <div className="flex h-full w-full flex-col">
@@ -108,15 +125,16 @@ export function SidebarContent({
           {!collapsed && "Team"}
         </Link>
 
-        {collapsed ? (
-          <Separator className="my-2" />
-        ) : (
-          <p className="px-3 pt-4 pb-1 text-xs font-medium text-muted-foreground">
-            Automations
-          </p>
-        )}
+        {allowedProjects.length > 0 &&
+          (collapsed ? (
+            <Separator className="my-2" />
+          ) : (
+            <p className="px-3 pt-4 pb-1 text-xs font-medium text-muted-foreground">
+              Automations
+            </p>
+          ))}
 
-        {projects.map((project) => {
+        {allowedProjects.map((project) => {
           const Icon = project.icon;
           return (
             <Link
@@ -136,15 +154,16 @@ export function SidebarContent({
           );
         })}
 
-        {collapsed ? (
-          <Separator className="my-2" />
-        ) : (
-          <p className="px-3 pt-4 pb-1 text-xs font-medium text-muted-foreground">
-            Tools
-          </p>
-        )}
+        {allowedTools.length > 0 &&
+          (collapsed ? (
+            <Separator className="my-2" />
+          ) : (
+            <p className="px-3 pt-4 pb-1 text-xs font-medium text-muted-foreground">
+              Tools
+            </p>
+          ))}
 
-        {tools.map((tool) => {
+        {allowedTools.map((tool) => {
           const Icon = tool.icon;
           return (
             <Link
@@ -164,15 +183,16 @@ export function SidebarContent({
           );
         })}
 
-        {collapsed ? (
-          <Separator className="my-2" />
-        ) : (
-          <p className="px-3 pt-4 pb-1 text-xs font-medium text-muted-foreground">
-            Configuration
-          </p>
-        )}
+        {allowedConfiguration.length > 0 &&
+          (collapsed ? (
+            <Separator className="my-2" />
+          ) : (
+            <p className="px-3 pt-4 pb-1 text-xs font-medium text-muted-foreground">
+              Configuration
+            </p>
+          ))}
 
-        {configurationItems.map((item) => {
+        {allowedConfiguration.map((item) => {
           const Icon = item.icon;
           return (
             <Link
@@ -193,13 +213,13 @@ export function SidebarContent({
         })}
       </nav>
 
-      {role === "admin" && (
+      {canManageUsers(role) && (
         <div className={cn("px-3 pb-2", collapsed && "px-2")}>
           {collapsed ? (
             <Separator className="my-2" />
           ) : (
             <p className="px-3 pt-4 pb-1 text-xs font-medium text-muted-foreground">
-              Admin
+              {role === "admin" ? "Admin" : "Moderator"}
             </p>
           )}
           <Link

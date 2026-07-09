@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardAction } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,6 +13,15 @@ import {
   SheetDescription,
   SheetFooter,
 } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import { masterList } from "@/lib/configuration";
 import {
   listSkus,
@@ -22,6 +31,12 @@ import {
   type Sku,
   type DetectedSkuSheet,
 } from "@/lib/actions/sku-list";
+import { fetchSkuDetail } from "@/lib/actions/pricing-update";
+import type { MarketplaceCode, SkuDetail } from "@/lib/amazon/sp-api";
+
+function formatPrice(amount: number | null): string {
+  return amount === null ? "—" : "$" + amount.toFixed(2);
+}
 
 const inputClass =
   "w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
@@ -36,6 +51,7 @@ export default function MasterListPage() {
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [selected, setSelected] = useState<Sku | null>(null);
 
   async function refresh() {
     const { data, error } = await listSkus();
@@ -102,8 +118,16 @@ export default function MasterListPage() {
                       key={s.id}
                       className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm"
                     >
-                      <span className="font-mono">{s.sku}</span>
-                      <button onClick={() => handleDelete(s)} className="text-destructive hover:underline">
+                      <button
+                        onClick={() => setSelected(s)}
+                        className="min-w-0 flex-1 truncate text-left font-mono hover:underline"
+                      >
+                        {s.sku}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(s)}
+                        className="ml-3 shrink-0 text-destructive hover:underline"
+                      >
                         Remove
                       </button>
                     </div>
@@ -125,6 +149,7 @@ export default function MasterListPage() {
         existingSkus={(skus ?? []).map((s) => s.sku)}
         onApplied={refresh}
       />
+      <SkuDetailDialog sku={selected} onOpenChange={(open) => !open && setSelected(null)} />
     </>
   );
 }
@@ -386,5 +411,134 @@ function ImportSkusSheet({
         </SheetFooter>
       </SheetContent>
     </Sheet>
+  );
+}
+
+function SkuDetailDialog({
+  sku,
+  onOpenChange,
+}: {
+  sku: Sku | null;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [marketplace, setMarketplace] = useState<MarketplaceCode>("US");
+  const [detail, setDetail] = useState<SkuDetail | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  const skuValue = sku?.sku ?? null;
+
+  // Reset the marketplace back to US each time a different SKU is opened.
+  useEffect(() => {
+    if (sku) setMarketplace("US");
+  }, [sku]);
+
+  const load = useCallback(() => {
+    if (!skuValue) return;
+    setDetail(null);
+    setError(null);
+    startTransition(async () => {
+      const { data, error } = await fetchSkuDetail(skuValue, marketplace);
+      if (error) setError(error);
+      else setDetail(data);
+    });
+  }, [skuValue, marketplace]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const priceRows: { label: string; value: number | null }[] = detail
+    ? [
+        { label: "Your Price", value: detail.salesPrice },
+        { label: "Sale Price", value: detail.discountedPrice },
+        { label: "List Price", value: detail.listPrice },
+        { label: "Featured Price", value: detail.featuredPrice },
+      ]
+    : [];
+
+  return (
+    <AlertDialog open={sku !== null} onOpenChange={onOpenChange}>
+      <AlertDialogContent className="max-w-md gap-4 sm:max-w-md">
+        <AlertDialogHeader className="place-items-start text-left sm:place-items-start sm:text-left">
+          <AlertDialogTitle className="font-mono">{sku?.sku ?? "SKU"}</AlertDialogTitle>
+          <AlertDialogDescription>Amazon catalog &amp; pricing details</AlertDialogDescription>
+        </AlertDialogHeader>
+
+        <div className="max-h-[60vh] space-y-4 overflow-y-auto">
+          <div className="inline-flex rounded-md border border-input p-0.5">
+            {(["US", "CA"] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => setMarketplace(m)}
+                className={`rounded px-3 py-1 text-sm font-medium transition-colors ${
+                  marketplace === m ? "bg-primary text-primary-foreground" : "hover:bg-accent"
+                }`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+
+          {isPending ? (
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-2/3" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </div>
+          ) : error ? (
+            <div className="space-y-2">
+              <p className="text-sm text-destructive">{error}</p>
+              <button onClick={load} className={secondaryBtn}>
+                Retry
+              </button>
+            </div>
+          ) : detail ? (
+            <div className="space-y-4">
+              <div>
+                {detail.productName ? (
+                  <p className="font-medium leading-snug">{detail.productName}</p>
+                ) : (
+                  <p className="font-mono text-sm">{detail.sku}</p>
+                )}
+                {detail.productDescription && (
+                  <p className="mt-1 line-clamp-3 text-xs text-muted-foreground">
+                    {detail.productDescription}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                  ASIN
+                </p>
+                <p className="font-mono text-sm">{detail.asin ?? "—"}</p>
+              </div>
+
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+                {priceRows.map((row) => (
+                  <div key={row.label}>
+                    <dt className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                      {row.label}
+                    </dt>
+                    <dd className="font-medium">{formatPrice(row.value)}</dd>
+                  </div>
+                ))}
+              </dl>
+
+              {detail.salesPrice === null && (
+                <p className="text-xs text-muted-foreground">
+                  {detail.error ?? "No active offer on Amazon for this SKU."}
+                </p>
+              )}
+            </div>
+          ) : null}
+        </div>
+
+        <AlertDialogFooter>
+          <AlertDialogCancel>Close</AlertDialogCancel>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

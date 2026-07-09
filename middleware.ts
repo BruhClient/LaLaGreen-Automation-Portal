@@ -10,11 +10,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (
-    request.nextUrl.pathname.startsWith("/admin") &&
-    session.role !== "admin"
-  ) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  const { pathname } = request.nextUrl;
+  if (pathname.startsWith("/admin")) {
+    // Admins can reach any /admin route. Moderators can reach only /admin/users
+    // (to create users and reset user passwords). Everyone else is bounced.
+    const allowed =
+      session.role === "admin" ||
+      (session.role === "moderator" && pathname === "/admin/users");
+    if (!allowed) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
   }
 
   return NextResponse.next();
