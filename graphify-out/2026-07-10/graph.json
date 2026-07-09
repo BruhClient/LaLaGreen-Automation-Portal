@@ -8580,7 +8580,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/(portal)/dashboard/page.tsx",
-      "source_location": "L23",
+      "source_location": "L26",
       "weight": 1.0,
       "source": "app_portal_dashboard_page_dashboardpage",
       "target": "lib_roles_isallowed"

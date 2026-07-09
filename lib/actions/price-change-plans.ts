@@ -91,6 +91,7 @@ export async function createPricePlan(input: {
     .from("price_change_plans")
     .select("id")
     .eq("sku", sku)
+    .eq("marketplace", marketplace)
     .eq("price_type", priceType)
     .eq("status", "active")
     .maybeSingle();
@@ -121,7 +122,59 @@ export async function createPricePlan(input: {
     .select(PLAN_COLUMNS)
     .single();
 
-  if (insertError) return { data: null, error: insertError.message };
+  if (insertError) {
+    // A concurrent create can slip past the pre-check above; the partial unique
+    // index (sku, marketplace, price_type where status='active') is the real guard.
+    if (insertError.code === "23505") {
+      const label = priceType === "sale_price" ? "Sale Price" : "Your Price";
+      return { data: null, error: `An active ${label} plan already exists for this SKU — cancel it first.` };
+    }
+    return { data: null, error: insertError.message };
+  }
+  return { data: data as PricePlan, error: null };
+}
+
+export async function updatePricePlan(
+  id: string,
+  input: { targetPrice: number; increment: number }
+): Promise<{ data: PricePlan | null; error: string | null }> {
+  const { error } = await requireStaff();
+  if (error) return { data: null, error };
+
+  const { targetPrice, increment } = input;
+  if (!Number.isFinite(increment) || increment <= 0) {
+    return { data: null, error: "Increment must be greater than 0" };
+  }
+  if (!Number.isFinite(targetPrice)) {
+    return { data: null, error: "Target price is required" };
+  }
+
+  const service = createServiceClient();
+
+  // Need current_price to recompute direction and validate the new target.
+  const { data: plan, error: loadError } = await service
+    .from("price_change_plans")
+    .select("current_price, status")
+    .eq("id", id)
+    .maybeSingle();
+  if (loadError) return { data: null, error: loadError.message };
+  if (!plan) return { data: null, error: "Plan not found" };
+  if (plan.status !== "active") return { data: null, error: "Only active plans can be edited" };
+  if (targetPrice === plan.current_price) {
+    return { data: null, error: "Target price must differ from current price" };
+  }
+
+  const direction = targetPrice > plan.current_price ? "increase" : "decrease";
+
+  const { data, error: updateError } = await service
+    .from("price_change_plans")
+    .update({ target_price: targetPrice, increment, direction, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("status", "active")
+    .select(PLAN_COLUMNS)
+    .single();
+
+  if (updateError) return { data: null, error: updateError.message };
   return { data: data as PricePlan, error: null };
 }
 

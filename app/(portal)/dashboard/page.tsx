@@ -33,7 +33,7 @@ export default async function DashboardPage() {
 
       {/* Your access — shows every automation, tool, and configuration item the
           signed-in user may open. Admins see everything. */}
-      <div className="mt-6 rounded-lg border border-border bg-card p-5">
+      <div className="mt-6">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-foreground">Your access</h3>
           {role === "admin" && (
@@ -44,30 +44,27 @@ export default async function DashboardPage() {
         </div>
 
         {hasAnyAccess ? (
-          <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {accessGroups.map((group) => (
-              <div key={group.label}>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {group.label}
-                </p>
-                <ul className="space-y-1">
-                  {group.items.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <li key={item.id}>
-                        <Link
-                          href={item.href}
-                          className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-accent"
-                        >
-                          <Icon className="size-4 shrink-0 text-muted-foreground" />
-                          <span className="truncate">{item.name}</span>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {accessGroups
+              .flatMap((g) => g.items.map((item) => ({ ...item, group: g.label.replace(/s$/, "") })))
+              .map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="flex items-center gap-3 rounded-lg border border-border p-4 transition-colors hover:bg-accent"
+                  >
+                    <Icon className="size-5 shrink-0 text-muted-foreground" />
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-medium text-foreground">{item.name}</span>
+                      <span className="block text-[11px] uppercase tracking-wide text-muted-foreground">
+                        {item.group}
+                      </span>
+                    </span>
+                  </Link>
+                );
+              })}
           </div>
         ) : (
           <p className="mt-3 text-sm text-muted-foreground">

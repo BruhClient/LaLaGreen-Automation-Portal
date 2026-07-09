@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { ArrowDown, ArrowUp, CheckCircle2, Clock, X, XCircle } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, Clock, Pencil, X, XCircle } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { priceChangePlans } from "@/lib/projects";
 import { listSkus, type Sku } from "@/lib/actions/sku-list";
 import { fetchSkuDetail } from "@/lib/actions/pricing-update";
-import { listPricePlans, createPricePlan, cancelPricePlan, type PricePlan } from "@/lib/actions/price-change-plans";
+import { listPricePlans, createPricePlan, updatePricePlan, cancelPricePlan, type PricePlan } from "@/lib/actions/price-change-plans";
 import type { MarketplaceCode, SkuDetail } from "@/lib/amazon/sp-api";
 
 const inputClass =
@@ -67,6 +67,7 @@ export default function PriceChangePlansPage() {
   const [plans, setPlans] = useState<PricePlan[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [editPlan, setEditPlan] = useState<PricePlan | null>(null);
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -132,7 +133,7 @@ export default function PriceChangePlansPage() {
                 No price change plans yet — click &quot;+ New Plan&quot; to create one.
               </p>
             ) : (
-              <PlansList plans={plans} isPending={isPending} onCancel={setCancelId} />
+              <PlansList plans={plans} isPending={isPending} onCancel={setCancelId} onEdit={setEditPlan} />
             )}
           </CardContent>
         </Card>
@@ -140,9 +141,19 @@ export default function PriceChangePlansPage() {
 
       <NewPricePlanSheet
         open={sheetOpen}
+        activePlans={(plans ?? []).filter((p) => p.status === "active")}
         onOpenChange={setSheetOpen}
         onCreated={() => {
           setSheetOpen(false);
+          reloadPlans();
+        }}
+      />
+
+      <EditPricePlanSheet
+        plan={editPlan}
+        onOpenChange={(open) => !open && setEditPlan(null)}
+        onSaved={() => {
+          setEditPlan(null);
           reloadPlans();
         }}
       />
@@ -172,13 +183,24 @@ function PlansList({
   plans,
   isPending,
   onCancel,
+  onEdit,
 }: {
   plans: PricePlan[];
   isPending: boolean;
   onCancel: (id: string) => void;
+  onEdit: (plan: PricePlan) => void;
 }) {
   const [marketFilter, setMarketFilter] = useState<"ALL" | MarketplaceCode>("ALL");
-  const filtered = marketFilter === "ALL" ? plans : plans.filter((p) => p.marketplace === marketFilter);
+  const [typeFilter, setTypeFilter] = useState<"ALL" | PriceTypeOption>("ALL");
+  const [skuSearch, setSkuSearch] = useState("");
+
+  const query = skuSearch.trim().toUpperCase();
+  const filtered = plans.filter(
+    (p) =>
+      (marketFilter === "ALL" || p.marketplace === marketFilter) &&
+      (typeFilter === "ALL" || p.price_type === typeFilter) &&
+      (query === "" || p.sku.toUpperCase().includes(query))
+  );
 
   const pending = filtered.filter((p) => p.status === "active");
   const completed = filtered.filter((p) => p.status === "completed");
@@ -210,15 +232,35 @@ function PlansList({
             </Badge>
           </TabsTrigger>
         </TabsList>
-        <select
-          value={marketFilter}
-          onChange={(e) => setMarketFilter(e.target.value as "ALL" | MarketplaceCode)}
-          className="h-8 w-full rounded-md border border-input bg-background px-2.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring sm:w-auto"
-        >
-          <option value="ALL">All Marketplaces</option>
-          <option value="US">US</option>
-          <option value="CA">Canada</option>
-        </select>
+        <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+          <input
+            value={skuSearch}
+            onChange={(e) => setSkuSearch(e.target.value)}
+            placeholder="Search SKU…"
+            className="h-8 w-full rounded-md border border-input bg-background px-2.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring sm:w-48"
+          />
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value as "ALL" | PriceTypeOption)}
+            className="h-8 w-full rounded-md border border-input bg-background px-2.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring sm:w-auto"
+          >
+            <option value="ALL">All Price Types</option>
+            {PRICE_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {priceTypeLabel(t)}
+              </option>
+            ))}
+          </select>
+          <select
+            value={marketFilter}
+            onChange={(e) => setMarketFilter(e.target.value as "ALL" | MarketplaceCode)}
+            className="h-8 w-full rounded-md border border-input bg-background px-2.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring sm:w-auto"
+          >
+            <option value="ALL">All Marketplaces</option>
+            <option value="US">US</option>
+            <option value="CA">Canada</option>
+          </select>
+        </div>
       </div>
 
       <TabsContent value="pending" className="mt-4">
@@ -227,7 +269,13 @@ function PlansList({
         ) : (
           <div className="space-y-3">
             {pending.map((p) => (
-              <PlanCard key={p.id} plan={p} disabled={isPending} onCancel={() => onCancel(p.id)} />
+              <PlanCard
+                key={p.id}
+                plan={p}
+                disabled={isPending}
+                onCancel={() => onCancel(p.id)}
+                onEdit={() => onEdit(p)}
+              />
             ))}
           </div>
         )}
@@ -287,7 +335,17 @@ function HistoryTable({ plans, emptyText }: { plans: PricePlan[]; emptyText: str
   );
 }
 
-function PlanCard({ plan: p, disabled, onCancel }: { plan: PricePlan; disabled: boolean; onCancel: () => void }) {
+function PlanCard({
+  plan: p,
+  disabled,
+  onCancel,
+  onEdit,
+}: {
+  plan: PricePlan;
+  disabled: boolean;
+  onCancel: () => void;
+  onEdit: () => void;
+}) {
   const pct = progressPercent(p.start_price, p.current_price, p.target_price);
   const days = daysRemaining(p.current_price, p.target_price, p.increment);
   const DirectionIcon = p.direction === "increase" ? ArrowUp : ArrowDown;
@@ -300,16 +358,28 @@ function PlanCard({ plan: p, disabled, onCancel }: { plan: PricePlan; disabled: 
           <MarketplaceBadge code={p.marketplace} />
           <Badge variant="outline">{priceTypeLabel(p.price_type)}</Badge>
         </div>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={onCancel}
-          disabled={disabled}
-          aria-label="Cancel plan"
-          title="Cancel plan"
-        >
-          <X />
-        </Button>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={onEdit}
+            disabled={disabled}
+            aria-label="Edit plan"
+            title="Edit target & step"
+          >
+            <Pencil />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={onCancel}
+            disabled={disabled}
+            aria-label="Cancel plan"
+            title="Cancel plan"
+          >
+            <X />
+          </Button>
+        </div>
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-2">
@@ -369,6 +439,9 @@ function SkuDetailPanel({ detail, onRefresh }: { detail: SkuDetail; onRefresh: (
           ) : (
             <p className="font-mono text-sm">{detail.sku}</p>
           )}
+          <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+            ASIN: {detail.asin ?? "—"}
+          </p>
           {detail.productDescription && (
             <p className="mt-1 line-clamp-3 text-xs text-muted-foreground">{detail.productDescription}</p>
           )}
@@ -398,10 +471,12 @@ function SkuDetailPanel({ detail, onRefresh }: { detail: SkuDetail; onRefresh: (
 
 function NewPricePlanSheet({
   open,
+  activePlans,
   onOpenChange,
   onCreated,
 }: {
   open: boolean;
+  activePlans: PricePlan[];
   onOpenChange: (open: boolean) => void;
   onCreated: () => void;
 }) {
@@ -469,12 +544,24 @@ function NewPricePlanSheet({
     if (selectedSku) fetchPrice(selectedSku, marketplace);
   }, [selectedSku, marketplace, fetchPrice]);
 
+  // Mirrors the server + DB uniqueness rule: one active plan per (sku, marketplace, price_type).
+  const isDuplicate =
+    selectedSku !== null &&
+    activePlans.some(
+      (p) => p.sku === selectedSku && p.marketplace === marketplace && p.price_type === priceType
+    );
+
   const targetNum = Number(targetPrice);
   const incrementNum = Number(increment);
   const hasValidTarget = targetPrice.trim() !== "" && Number.isFinite(targetNum);
   const hasValidIncrement = increment.trim() !== "" && Number.isFinite(incrementNum) && incrementNum > 0;
   const canCreate =
-    currentPrice !== null && hasValidTarget && targetNum !== currentPrice && hasValidIncrement && !isPending;
+    !isDuplicate &&
+    currentPrice !== null &&
+    hasValidTarget &&
+    targetNum !== currentPrice &&
+    hasValidIncrement &&
+    !isPending;
 
   const direction = currentPrice !== null && hasValidTarget ? (targetNum > currentPrice ? "increase" : "decrease") : null;
   const steps =
@@ -586,6 +673,13 @@ function NewPricePlanSheet({
             </div>
           </div>
 
+          {isDuplicate && (
+            <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
+              An active {priceLabel} plan already exists for {selectedSku} on {marketplace} — cancel it first or edit
+              the existing plan.
+            </div>
+          )}
+
           {selectedSku && (
             <div className="rounded-md border border-border bg-muted/30 px-3 py-2.5 text-sm">
               {isPending ? (
@@ -650,5 +744,117 @@ function NewPricePlanSheet({
         </SheetFooter>
       </SheetContent>
     </Sheet>
+  );
+}
+
+function EditPricePlanSheet({
+  plan,
+  onOpenChange,
+  onSaved,
+}: {
+  plan: PricePlan | null;
+  onOpenChange: (open: boolean) => void;
+  onSaved: () => void;
+}) {
+  return (
+    <Sheet open={plan !== null} onOpenChange={onOpenChange}>
+      <SheetContent>
+        {/* Keyed by plan id so the form's inputs reset when a different plan is opened. */}
+        {plan && <EditPricePlanForm key={plan.id} plan={plan} onSaved={onSaved} />}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function EditPricePlanForm({ plan, onSaved }: { plan: PricePlan; onSaved: () => void }) {
+  const current = plan.current_price;
+  const priceLabel = priceTypeLabel(plan.price_type);
+  const [targetPrice, setTargetPrice] = useState(String(plan.target_price));
+  const [increment, setIncrement] = useState(String(plan.increment));
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  const targetNum = Number(targetPrice);
+  const incrementNum = Number(increment);
+  const hasValidTarget = targetPrice.trim() !== "" && Number.isFinite(targetNum);
+  const hasValidIncrement = increment.trim() !== "" && Number.isFinite(incrementNum) && incrementNum > 0;
+  const canSave = hasValidTarget && targetNum !== current && hasValidIncrement && !isPending;
+
+  const direction = hasValidTarget ? (targetNum > current ? "increase" : "decrease") : null;
+  const steps = hasValidTarget && hasValidIncrement ? Math.ceil(Math.abs(targetNum - current) / incrementNum) : null;
+
+  function handleSave() {
+    setError(null);
+    startTransition(async () => {
+      const { error } = await updatePricePlan(plan.id, { targetPrice: targetNum, increment: incrementNum });
+      if (error) setError(error);
+      else onSaved();
+    });
+  }
+
+  return (
+    <>
+      <SheetHeader>
+        <SheetTitle>Edit Price Change Plan</SheetTitle>
+        <SheetDescription>
+          Adjust the target and step size. The plan keeps its progress and continues from the current price.
+        </SheetDescription>
+      </SheetHeader>
+
+      <div className="flex-1 space-y-4 overflow-y-auto px-4">
+        {error && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-mono text-sm font-medium">{plan.sku}</span>
+          <MarketplaceBadge code={plan.marketplace} />
+          <Badge variant="outline">{priceLabel}</Badge>
+        </div>
+
+        <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm">
+          Current {priceLabel}: <span className="font-medium">{formatPrice(current)}</span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Target {priceLabel} ($)</label>
+            <input
+              type="number"
+              step="0.01"
+              className={inputClass}
+              value={targetPrice}
+              onChange={(e) => setTargetPrice(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Increment ($)</label>
+            <input
+              type="number"
+              step="0.01"
+              className={inputClass}
+              value={increment}
+              onChange={(e) => setIncrement(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {direction && steps !== null && (
+          <p className="text-sm text-muted-foreground">
+            This will {direction} the {priceLabel} from {formatPrice(current)} to {formatPrice(targetNum)} in steps of up
+            to {formatPrice(incrementNum)} — about {steps} day{steps === 1 ? "" : "s"} to reach the target (n8n applies
+            one step per day).
+          </p>
+        )}
+      </div>
+
+      <SheetFooter>
+        <Button onClick={handleSave} disabled={!canSave}>
+          {isPending ? "Saving…" : "Save Changes"}
+        </Button>
+      </SheetFooter>
+    </>
   );
 }

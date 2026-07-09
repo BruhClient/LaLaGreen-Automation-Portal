@@ -603,7 +603,18 @@ function LiveProjectionCard({
           )}
         </div>
         <ChartContainer config={chartConfig} className="h-56 w-full">
-          <LineChart data={rows}>
+          <LineChart
+            data={rows}
+            className="cursor-pointer"
+            onClick={(state) => {
+              const clicked = state?.activeLabel;
+              // Only move to selectable (future) slots — mirrors the top-up form,
+              // which cannot target past slots. Past clicks are ignored.
+              if (typeof clicked === "string" && availableRows.some((r) => r.slot === clicked)) {
+                setSlot(clicked);
+              }
+            }}
+          >
             <CartesianGrid vertical={false} />
             <XAxis dataKey="slot" tickLine={false} axisLine={false} interval={17} />
             <YAxis tickLine={false} axisLine={false} width={40} />
