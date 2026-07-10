@@ -92,6 +92,32 @@ NEXT_PUBLIC_SUPABASE_URL=https://<project-id>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
 ```
 
+#### Amazon Advertising API (Sponsored Brands Upload → "Upload to Amazon")
+
+Direct campaign upload uses the Amazon **Advertising** API, which is separate from
+the SP-API credentials (`CLIENT_ID` / `CLIENT_SECRET` / `REFRESH_TOKEN`) used for
+pricing/listings. The refresh token must be granted the `advertising::campaign_management`
+scope; the LWA client id/secret may be the same app as SP-API or a different one.
+
+```bash
+# .env.local — Amazon Ads API (advertising scope). Only these three are required.
+ADS_CLIENT_ID=<LWA client id>
+ADS_CLIENT_SECRET=<LWA client secret>
+ADS_REFRESH_TOKEN=<refresh token with advertising::campaign_management scope>
+
+# Optional — pin a specific advertising profile. Omit to auto-resolve by marketplace.
+# ADS_PROFILE_ID_US=3041144588979787
+# ADS_PROFILE_ID_CA=<CA advertising profile id>
+```
+
+Profile ids are resolved automatically at upload time from
+`GET https://advertising-api.amazon.com/v2/profiles` (matching the campaign's
+marketplace by `countryCode`, preferring a seller account) — so only the three
+OAuth values above are needed. Set `ADS_PROFILE_ID_US` / `ADS_PROFILE_ID_CA` only
+to override that lookup. Without the OAuth creds, "Download bulk file" still works;
+"Upload to Amazon" surfaces a clear error. Client logic lives in
+`lib/amazon/ads-api.ts`; the route is `app/api/tools/sponsored-brands-upload/upload/route.ts`.
+
 ---
 
 ## Database (Supabase)

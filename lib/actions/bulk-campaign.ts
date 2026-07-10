@@ -19,8 +19,13 @@ export interface Brand {
   country: Country;
   brand_entity_id: string;
   brand_name: string;
+  brand_logo_asset_id: string | null;
+  store_page_url: string | null;
   created_at: string;
 }
+
+const BRAND_COLUMNS =
+  "id, name, country, brand_entity_id, brand_name, brand_logo_asset_id, store_page_url, created_at";
 
 export interface VideoAsset {
   id: string;
@@ -56,7 +61,7 @@ export async function listBrands() {
   const client = await createClient();
   const { data, error: dbError } = await client
     .from("bulk_campaign_brands")
-    .select("id, name, country, brand_entity_id, brand_name, created_at")
+    .select(BRAND_COLUMNS)
     .order("created_at", { ascending: true });
 
   return { data: data as Brand[] | null, error: dbError?.message ?? null };
@@ -67,6 +72,8 @@ export async function createBrand(input: {
   country: string;
   brandEntityId: string;
   brandName: string;
+  brandLogoAssetId?: string;
+  storePageUrl?: string;
 }) {
   const { error } = await requireStaff();
   if (error) return { data: null, error };
@@ -86,8 +93,10 @@ export async function createBrand(input: {
       country: input.country,
       brand_entity_id: input.brandEntityId.trim(),
       brand_name: input.brandName.trim(),
+      brand_logo_asset_id: input.brandLogoAssetId?.trim() || null,
+      store_page_url: input.storePageUrl?.trim() || null,
     })
-    .select("id, name, country, brand_entity_id, brand_name, created_at")
+    .select(BRAND_COLUMNS)
     .single();
 
   return { data: data as Brand | null, error: dbError?.message ?? null };
@@ -95,7 +104,14 @@ export async function createBrand(input: {
 
 export async function updateBrand(
   id: string,
-  updates: { name?: string; country?: string; brandEntityId?: string; brandName?: string }
+  updates: {
+    name?: string;
+    country?: string;
+    brandEntityId?: string;
+    brandName?: string;
+    brandLogoAssetId?: string;
+    storePageUrl?: string;
+  }
 ) {
   const { error } = await requireStaff();
   if (error) return { data: null, error };
@@ -109,13 +125,17 @@ export async function updateBrand(
   if (updates.country !== undefined) dbUpdates.country = updates.country;
   if (updates.brandEntityId !== undefined) dbUpdates.brand_entity_id = updates.brandEntityId.trim();
   if (updates.brandName !== undefined) dbUpdates.brand_name = updates.brandName.trim();
+  if (updates.brandLogoAssetId !== undefined)
+    dbUpdates.brand_logo_asset_id = updates.brandLogoAssetId.trim() || null;
+  if (updates.storePageUrl !== undefined)
+    dbUpdates.store_page_url = updates.storePageUrl.trim() || null;
 
   const service = createServiceClient();
   const { data, error: dbError } = await service
     .from("bulk_campaign_brands")
     .update(dbUpdates)
     .eq("id", id)
-    .select("id, name, country, brand_entity_id, brand_name, created_at")
+    .select(BRAND_COLUMNS)
     .single();
 
   return { data: data as Brand | null, error: dbError?.message ?? null };
@@ -347,6 +367,63 @@ export async function deletePreset(id: string) {
 
   const service = createServiceClient();
   const { error: dbError } = await service.from("bulk_campaign_presets").delete().eq("id", id);
+
+  return { data: dbError ? null : { ok: true }, error: dbError?.message ?? null };
+}
+
+// --- Products (one saved ProductBlock config per row, persists across reloads) ---
+
+export interface CampaignProduct {
+  id: string;
+  config: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function listProducts() {
+  const { error } = await requireStaff();
+  if (error) return { data: null, error };
+
+  const client = await createClient();
+  const { data, error: dbError } = await client
+    .from("bulk_campaign_products")
+    .select("id, config, created_at, updated_at")
+    .order("created_at", { ascending: true });
+
+  return { data: data as CampaignProduct[] | null, error: dbError?.message ?? null };
+}
+
+export async function saveProduct(config: Record<string, unknown>, id?: string | null) {
+  const { error } = await requireStaff();
+  if (error) return { data: null, error };
+
+  if (!config || typeof config !== "object") {
+    return { data: null, error: "Product config is required" };
+  }
+
+  const service = createServiceClient();
+  const { data, error: dbError } = id
+    ? await service
+        .from("bulk_campaign_products")
+        .update({ config, updated_at: new Date().toISOString() })
+        .eq("id", id)
+        .select("id, config, created_at, updated_at")
+        .single()
+    : await service
+        .from("bulk_campaign_products")
+        .insert({ config })
+        .select("id, config, created_at, updated_at")
+        .single();
+
+  return { data: data as CampaignProduct | null, error: dbError?.message ?? null };
+}
+
+export async function deleteProduct(id: string) {
+  const { error } = await requireStaff();
+  if (error) return { data: null, error };
+
+  const service = createServiceClient();
+  const { error: dbError } = await service.from("bulk_campaign_products").delete().eq("id", id);
 
   return { data: dbError ? null : { ok: true }, error: dbError?.message ?? null };
 }

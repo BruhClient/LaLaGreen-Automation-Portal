@@ -3,21 +3,8 @@ import { getSession } from "@/lib/session";
 import { getMyPermissions } from "@/lib/permissions";
 import { isAllowed } from "@/lib/roles";
 import { createClient } from "@/lib/supabase/server";
-import { buildSponsoredBrandsBulk, type CampaignInput, type Country } from "@/lib/xlsx/buildSponsoredBrandsBulk";
-
-type IncomingCampaign = {
-  brandId: string;
-  campaignName: string;
-  bid: number;
-  budget?: number;
-  startDate: string;
-  keywords: string[];
-  negativeKeywords?: string[];
-  matchTypes?: ("exact" | "phrase" | "broad")[];
-} & (
-  | { adFormat: "video"; asin: string; videoAssetId: string }
-  | { adFormat: "productCollection"; asins: string[] }
-);
+import { buildSponsoredBrandsBulk, type CampaignInput } from "@/lib/xlsx/buildSponsoredBrandsBulk";
+import { resolveMarketplace, type IncomingCampaign } from "../_resolve";
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
@@ -44,38 +31,14 @@ export async function POST(req: NextRequest) {
   }
 
   const client = await createClient();
-  const { data: brands, error } = await client
-    .from("bulk_campaign_brands")
-    .select("id, country, brand_entity_id, brand_name");
-  if (error || !brands?.length) {
-    return NextResponse.json({ error: "Brand profiles not found" }, { status: 404 });
+  const resolved = await resolveMarketplace(campaigns, client);
+  if ("error" in resolved) {
+    return NextResponse.json({ error: resolved.error }, { status: resolved.status });
   }
-
-  const byId = new Map(brands.map((b) => [b.id, b]));
-
-  const referencedCountries = new Set<string>();
-  for (const c of campaigns) {
-    const brand = byId.get(c.brandId);
-    if (!brand) {
-      return NextResponse.json(
-        { error: "A campaign references an unknown brand profile" },
-        { status: 400 }
-      );
-    }
-    referencedCountries.add(brand.country);
-  }
-  if (referencedCountries.size > 1) {
-    return NextResponse.json(
-      {
-        error: `All product blocks must use brand profiles from the same marketplace. Found: ${[...referencedCountries].join(", ")}.`,
-      },
-      { status: 400 }
-    );
-  }
-  const country = [...referencedCountries][0] as Country;
+  const { country, brandById } = resolved;
 
   const enriched: CampaignInput[] = campaigns.map((c) => {
-    const brand = byId.get(c.brandId)!;
+    const brand = brandById.get(c.brandId)!;
     const { brandId: _omit, ...rest } = c;
     void _omit;
     return { ...rest, brandEntityId: brand.brand_entity_id, brandName: brand.brand_name };

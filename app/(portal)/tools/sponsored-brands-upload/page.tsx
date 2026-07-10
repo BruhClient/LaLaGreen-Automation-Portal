@@ -4,6 +4,11 @@ import { useEffect, useState, useTransition } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardAction } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Sheet,
   SheetContent,
@@ -12,6 +17,16 @@ import {
   SheetDescription,
   SheetFooter,
 } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { bulkCampaignUpload } from "@/lib/tools";
 import { extractAssetId } from "@/lib/xlsx/assetId";
 import {
@@ -29,27 +44,25 @@ import {
   deleteKeywordTheme,
   duplicateKeywordTheme,
   listPresets,
+  listProducts,
   type Brand,
   type VideoAsset,
   type KeywordTheme,
   type Preset as ActionPreset,
+  type CampaignProduct,
 } from "@/lib/actions/bulk-campaign";
 import GenerateForm from "./generate-form";
 import type { Preset } from "./product-block";
 
 const COUNTRIES = ["US", "CA", "MX", "AU", "EU", "UK", "JP"];
-const inputClass =
-  "w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
-const primaryBtn =
-  "rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50";
-const secondaryBtn =
-  "rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50";
+const selectClass =
+  "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30";
+const labelClass = "mb-1.5 block text-xs font-medium text-muted-foreground";
 
-type WizardStep = "library" | "build" | "generate";
+type WizardStep = "library" | "build";
 const STEPS: { key: WizardStep; label: string }[] = [
-  { key: "library", label: "1. Library" },
-  { key: "build", label: "2. Build Products" },
-  { key: "generate", label: "3. Generate" },
+  { key: "library", label: "Library" },
+  { key: "build", label: "Build Ads" },
 ];
 
 export default function BulkCampaignUploadPage() {
@@ -57,6 +70,7 @@ export default function BulkCampaignUploadPage() {
   const [assets, setAssets] = useState<VideoAsset[]>([]);
   const [themes, setThemes] = useState<KeywordTheme[]>([]);
   const [presets, setPresets] = useState<ActionPreset[]>([]);
+  const [products, setProducts] = useState<CampaignProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<WizardStep>("library");
@@ -64,19 +78,21 @@ export default function BulkCampaignUploadPage() {
 
   function reload() {
     startTransition(async () => {
-      const [b, a, t, p] = await Promise.all([
+      const [b, a, t, p, pr] = await Promise.all([
         listBrands(),
         listVideoAssets(),
         listKeywordThemes(),
         listPresets(),
+        listProducts(),
       ]);
-      const err = b.error ?? a.error ?? t.error ?? p.error;
+      const err = b.error ?? a.error ?? t.error ?? p.error ?? pr.error;
       if (err) setError(err);
       else {
         setBrands(b.data ?? []);
         setAssets(a.data ?? []);
         setThemes(t.data ?? []);
         setPresets(p.data ?? []);
+        setProducts(pr.data ?? []);
         setError(null);
       }
       setIsLoading(false);
@@ -92,6 +108,8 @@ export default function BulkCampaignUploadPage() {
     sku: p.sku,
     config: p.config as never,
   }));
+
+  const libraryCount = brands.length + assets.length + themes.length;
 
   return (
     <>
@@ -116,23 +134,24 @@ export default function BulkCampaignUploadPage() {
           </Card>
         ) : (
           <>
-            <div className="flex flex-wrap gap-2">
-              {STEPS.map((s) => (
-                <button
-                  key={s.key}
-                  type="button"
-                  onClick={() => setStep(s.key)}
-                  className={
-                    step === s.key
-                      ? `${primaryBtn} disabled:opacity-100`
-                      : secondaryBtn
-                  }
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
+            <Tabs value={step} onValueChange={(v) => setStep(v as WizardStep)}>
+              <TabsList>
+                {STEPS.map((s) => (
+                  <TabsTrigger key={s.key} value={s.key} className="gap-1.5">
+                    {s.label}
+                    {s.key === "library" && libraryCount > 0 && (
+                      <Badge variant="secondary">{libraryCount}</Badge>
+                    )}
+                    {s.key === "build" && products.length > 0 && (
+                      <Badge variant="secondary">{products.length}</Badge>
+                    )}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
 
+            {/* Library content — GenerateForm stays mounted below so its
+                in-progress product config survives switching tabs. */}
             <div className={step === "library" ? "space-y-6" : "hidden"}>
               <BrandsSection brands={brands} onChanged={reload} />
               <AssetsSection brands={brands} assets={assets} onChanged={reload} />
@@ -142,43 +161,24 @@ export default function BulkCampaignUploadPage() {
             <div className={step === "library" ? "hidden" : ""}>
               <Card>
                 <CardHeader>
-                  <CardTitle>{step === "build" ? "Build Products" : "Generate"}</CardTitle>
+                  <CardTitle>Build Ads</CardTitle>
                   <CardDescription>
-                    {step === "build"
-                      ? "Configure one or more products to include in this bulk upload."
-                      : "Review the campaign count, name the file, and generate."}
+                    Configure one or more ads, then Review &amp; generate to download the bulk
+                    file or upload straight to Amazon.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <GenerateForm
-                    step={step === "build" ? "build" : "generate"}
                     brands={brands}
                     assets={assets}
                     themes={themes}
                     presets={presetsForForm}
+                    products={products}
                     onPresetsChanged={reload}
+                    onProductsChanged={reload}
                   />
                 </CardContent>
               </Card>
-            </div>
-
-            <div className="flex justify-between">
-              <button
-                type="button"
-                disabled={step === "library"}
-                onClick={() => setStep(step === "generate" ? "build" : "library")}
-                className={secondaryBtn}
-              >
-                ← Back
-              </button>
-              <button
-                type="button"
-                disabled={step === "generate"}
-                onClick={() => setStep(step === "library" ? "build" : "generate")}
-                className={primaryBtn}
-              >
-                Next →
-              </button>
             </div>
           </>
         )}
@@ -194,8 +194,11 @@ function BrandsSection({ brands, onChanged }: { brands: Brand[]; onChanged: () =
   const [country, setCountry] = useState("US");
   const [brandEntityId, setBrandEntityId] = useState("");
   const [brandName, setBrandName] = useState("");
+  const [brandLogoAssetId, setBrandLogoAssetId] = useState("");
+  const [storePageUrl, setStorePageUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Brand | null>(null);
 
   function openAdd() {
     setEditing(null);
@@ -203,6 +206,8 @@ function BrandsSection({ brands, onChanged }: { brands: Brand[]; onChanged: () =
     setCountry("US");
     setBrandEntityId("");
     setBrandName("");
+    setBrandLogoAssetId("");
+    setStorePageUrl("");
     setFormError(null);
     setOpen(true);
   }
@@ -213,6 +218,8 @@ function BrandsSection({ brands, onChanged }: { brands: Brand[]; onChanged: () =
     setCountry(b.country);
     setBrandEntityId(b.brand_entity_id);
     setBrandName(b.brand_name);
+    setBrandLogoAssetId(b.brand_logo_asset_id ?? "");
+    setStorePageUrl(b.store_page_url ?? "");
     setFormError(null);
     setOpen(true);
   }
@@ -220,9 +227,24 @@ function BrandsSection({ brands, onChanged }: { brands: Brand[]; onChanged: () =
   async function handleSave() {
     setBusy(true);
     setFormError(null);
+    const cleanLogo = extractAssetId(brandLogoAssetId);
     const { error } = editing
-      ? await updateBrand(editing.id, { name, country, brandEntityId, brandName })
-      : await createBrand({ name, country, brandEntityId, brandName });
+      ? await updateBrand(editing.id, {
+          name,
+          country,
+          brandEntityId,
+          brandName,
+          brandLogoAssetId: cleanLogo,
+          storePageUrl,
+        })
+      : await createBrand({
+          name,
+          country,
+          brandEntityId,
+          brandName,
+          brandLogoAssetId: cleanLogo,
+          storePageUrl,
+        });
     setBusy(false);
     if (error) {
       setFormError(error);
@@ -233,7 +255,6 @@ function BrandsSection({ brands, onChanged }: { brands: Brand[]; onChanged: () =
   }
 
   async function handleDelete(b: Brand) {
-    if (!confirm(`Delete brand profile "${b.name}"? This also removes its video assets.`)) return;
     await deleteBrand(b.id);
     onChanged();
   }
@@ -244,9 +265,9 @@ function BrandsSection({ brands, onChanged }: { brands: Brand[]; onChanged: () =
         <CardTitle>Brand Profiles</CardTitle>
         <CardDescription>Amazon brand entity used to fill in bulk campaign rows</CardDescription>
         <CardAction>
-          <button onClick={openAdd} className={secondaryBtn}>
+          <Button variant="outline" size="sm" onClick={openAdd}>
             + Add Brand
-          </button>
+          </Button>
         </CardAction>
       </CardHeader>
       <CardContent>
@@ -257,24 +278,25 @@ function BrandsSection({ brands, onChanged }: { brands: Brand[]; onChanged: () =
             {brands.map((b) => (
               <div
                 key={b.id}
-                className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm"
+                className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-sm"
               >
-                <div>
-                  <span className="font-medium">{b.name}</span>{" "}
-                  <span className="text-muted-foreground">
-                    ({b.country}) · {b.brand_name}
-                  </span>
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="truncate font-medium">{b.name}</span>
+                  <Badge variant="outline">{b.country}</Badge>
+                  <span className="truncate text-muted-foreground">{b.brand_name}</span>
                 </div>
-                <div className="flex gap-3">
-                  <button onClick={() => openEdit(b)} className="text-foreground hover:underline">
+                <div className="flex shrink-0 gap-1">
+                  <Button variant="ghost" size="xs" onClick={() => openEdit(b)}>
                     Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(b)}
-                    className="text-destructive hover:underline"
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => setPendingDelete(b)}
+                    className="text-destructive hover:text-destructive"
                   >
                     Delete
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}
@@ -290,12 +312,12 @@ function BrandsSection({ brands, onChanged }: { brands: Brand[]; onChanged: () =
           </SheetHeader>
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4">
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Name</label>
-              <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} />
+              <label className={labelClass}>Name</label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Country</label>
-              <select className={inputClass} value={country} onChange={(e) => setCountry(e.target.value)}>
+              <label className={labelClass}>Country</label>
+              <select className={selectClass} value={country} onChange={(e) => setCountry(e.target.value)}>
                 {COUNTRIES.map((c) => (
                   <option key={c} value={c}>
                     {c}
@@ -304,32 +326,58 @@ function BrandsSection({ brands, onChanged }: { brands: Brand[]; onChanged: () =
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                Brand Entity ID
-              </label>
-              <input
-                className={inputClass}
-                value={brandEntityId}
-                onChange={(e) => setBrandEntityId(e.target.value)}
-              />
+              <label className={labelClass}>Brand Entity ID</label>
+              <Input value={brandEntityId} onChange={(e) => setBrandEntityId(e.target.value)} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Brand Name</label>
-              <input
-                className={inputClass}
-                value={brandName}
-                onChange={(e) => setBrandName(e.target.value)}
+              <label className={labelClass}>Brand Name</label>
+              <Input value={brandName} onChange={(e) => setBrandName(e.target.value)} />
+            </div>
+            <div>
+              <label className={labelClass}>Brand Logo Asset ID (optional)</label>
+              <Input
+                className="font-mono text-xs"
+                placeholder="amzn1.assetlibrary.asset1.XXXXX"
+                value={brandLogoAssetId}
+                onChange={(e) => setBrandLogoAssetId(e.target.value)}
               />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Used on Product Collection ads when uploading directly to Amazon.
+              </p>
+            </div>
+            <div>
+              <label className={labelClass}>Store Page URL (optional)</label>
+              <Input
+                placeholder="https://www.amazon.com/stores/page/…"
+                value={storePageUrl}
+                onChange={(e) => setStorePageUrl(e.target.value)}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Brand Store landing page for Product Collection ads. Leave blank to link to the ASINs.
+              </p>
             </div>
             {formError && <p className="text-sm text-destructive">{formError}</p>}
           </div>
           <SheetFooter className="flex-row justify-end gap-2">
-            <button onClick={handleSave} disabled={busy} className={primaryBtn}>
+            <Button onClick={handleSave} disabled={busy}>
               {busy ? "Saving…" : "Save"}
-            </button>
+            </Button>
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      <DeleteConfirm
+        item={pendingDelete}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={(b) => handleDelete(b)}
+        title="Delete brand profile?"
+        describe={(b) => (
+          <>
+            This deletes <span className="font-medium text-foreground">{b.name}</span> and all of its
+            video assets.
+          </>
+        )}
+      />
     </Card>
   );
 }
@@ -350,6 +398,7 @@ function AssetsSection({
   const [assetId, setAssetId] = useState("");
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<VideoAsset | null>(null);
 
   function openAdd() {
     setEditing(null);
@@ -386,7 +435,6 @@ function AssetsSection({
   }
 
   async function handleDelete(a: VideoAsset) {
-    if (!confirm(`Delete video asset "${a.label}"?`)) return;
     await deleteVideoAsset(a.id);
     onChanged();
   }
@@ -401,14 +449,15 @@ function AssetsSection({
         <CardTitle>Video Assets</CardTitle>
         <CardDescription>Amazon creative asset IDs, per brand</CardDescription>
         <CardAction>
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={openAdd}
             disabled={brands.length === 0}
-            className={secondaryBtn}
             title={brands.length === 0 ? "Add a Brand Profile first" : undefined}
           >
             + Add Asset
-          </button>
+          </Button>
         </CardAction>
       </CardHeader>
       <CardContent>
@@ -419,24 +468,25 @@ function AssetsSection({
             {assets.map((a) => (
               <div
                 key={a.id}
-                className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm"
+                className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-sm"
               >
-                <div>
-                  <span className="font-medium">{a.label}</span>{" "}
-                  <span className="text-muted-foreground">
-                    ({brandName(a.brand_id)}) · <span className="font-mono text-xs">{a.asset_id}</span>
-                  </span>
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="truncate font-medium">{a.label}</span>
+                  <Badge variant="outline">{brandName(a.brand_id)}</Badge>
+                  <span className="truncate font-mono text-xs text-muted-foreground">{a.asset_id}</span>
                 </div>
-                <div className="flex gap-3">
-                  <button onClick={() => openEdit(a)} className="text-foreground hover:underline">
+                <div className="flex shrink-0 gap-1">
+                  <Button variant="ghost" size="xs" onClick={() => openEdit(a)}>
                     Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(a)}
-                    className="text-destructive hover:underline"
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => setPendingDelete(a)}
+                    className="text-destructive hover:text-destructive"
                   >
                     Delete
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}
@@ -453,10 +503,8 @@ function AssetsSection({
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4">
             {!editing && (
               <div>
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                  Brand Profile
-                </label>
-                <select className={inputClass} value={brandId} onChange={(e) => setBrandId(e.target.value)}>
+                <label className={labelClass}>Brand Profile</label>
+                <select className={selectClass} value={brandId} onChange={(e) => setBrandId(e.target.value)}>
                   {brands.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name} ({b.country})
@@ -466,15 +514,13 @@ function AssetsSection({
               </div>
             )}
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Label</label>
-              <input className={inputClass} value={label} onChange={(e) => setLabel(e.target.value)} />
+              <label className={labelClass}>Label</label>
+              <Input value={label} onChange={(e) => setLabel(e.target.value)} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                Asset ID or URL
-              </label>
-              <input
-                className={`${inputClass} font-mono text-xs`}
+              <label className={labelClass}>Asset ID or URL</label>
+              <Input
+                className="font-mono text-xs"
                 placeholder="amzn1.assetlibrary.asset1.XXXXX"
                 value={assetId}
                 onChange={(e) => setAssetId(e.target.value)}
@@ -483,12 +529,24 @@ function AssetsSection({
             {formError && <p className="text-sm text-destructive">{formError}</p>}
           </div>
           <SheetFooter className="flex-row justify-end gap-2">
-            <button onClick={handleSave} disabled={busy} className={primaryBtn}>
+            <Button onClick={handleSave} disabled={busy}>
               {busy ? "Saving…" : "Save"}
-            </button>
+            </Button>
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      <DeleteConfirm
+        item={pendingDelete}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={(a) => handleDelete(a)}
+        title="Delete video asset?"
+        describe={(a) => (
+          <>
+            This deletes the video asset <span className="font-medium text-foreground">{a.label}</span>.
+          </>
+        )}
+      />
     </Card>
   );
 }
@@ -510,6 +568,7 @@ function KeywordGarageSection({
   const [negativeKeywords, setNegativeKeywords] = useState("");
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<KeywordTheme | null>(null);
 
   function openAdd() {
     setEditing(null);
@@ -552,7 +611,6 @@ function KeywordGarageSection({
   }
 
   async function handleDelete(t: KeywordTheme) {
-    if (!confirm(`Delete keyword theme "${t.name}"?`)) return;
     await deleteKeywordTheme(t.id);
     onChanged();
   }
@@ -573,9 +631,9 @@ function KeywordGarageSection({
         <CardTitle>Keyword Garage</CardTitle>
         <CardDescription>Reusable keyword and negative-keyword sets</CardDescription>
         <CardAction>
-          <button onClick={openAdd} className={secondaryBtn}>
+          <Button variant="outline" size="sm" onClick={openAdd}>
             + Add Theme
-          </button>
+          </Button>
         </CardAction>
       </CardHeader>
       <CardContent>
@@ -586,28 +644,27 @@ function KeywordGarageSection({
             {themes.map((t) => (
               <div
                 key={t.id}
-                className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm"
+                className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-sm"
               >
-                <div>
-                  <span className="font-medium">{t.name}</span>{" "}
-                  <span className="text-muted-foreground">({brandName(t.brand_id)})</span>
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="truncate font-medium">{t.name}</span>
+                  <Badge variant="outline">{brandName(t.brand_id)}</Badge>
                 </div>
-                <div className="flex gap-3">
-                  <button onClick={() => openEdit(t)} className="text-foreground hover:underline">
+                <div className="flex shrink-0 gap-1">
+                  <Button variant="ghost" size="xs" onClick={() => openEdit(t)}>
                     Edit
-                  </button>
-                  <button
-                    onClick={() => handleDuplicate(t)}
-                    className="text-foreground hover:underline"
-                  >
+                  </Button>
+                  <Button variant="ghost" size="xs" onClick={() => handleDuplicate(t)}>
                     Duplicate
-                  </button>
-                  <button
-                    onClick={() => handleDelete(t)}
-                    className="text-destructive hover:underline"
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => setPendingDelete(t)}
+                    className="text-destructive hover:text-destructive"
                   >
                     Delete
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}
@@ -625,10 +682,8 @@ function KeywordGarageSection({
           </SheetHeader>
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4">
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                Brand Profile (optional)
-              </label>
-              <select className={inputClass} value={brandId} onChange={(e) => setBrandId(e.target.value)}>
+              <label className={labelClass}>Brand Profile (optional)</label>
+              <select className={selectClass} value={brandId} onChange={(e) => setBrandId(e.target.value)}>
                 <option value="">All brands</option>
                 {brands.map((b) => (
                   <option key={b.id} value={b.id}>
@@ -638,25 +693,21 @@ function KeywordGarageSection({
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Name</label>
-              <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} />
+              <label className={labelClass}>Name</label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                Keywords (one per line)
-              </label>
-              <textarea
-                className={`${inputClass} min-h-[120px] font-mono text-xs`}
+              <label className={labelClass}>Keywords (one per line)</label>
+              <Textarea
+                className="min-h-[120px] font-mono text-xs"
                 value={keywords}
                 onChange={(e) => setKeywords(e.target.value)}
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                Negative keywords (optional, one per line)
-              </label>
-              <textarea
-                className={`${inputClass} min-h-[70px] font-mono text-xs`}
+              <label className={labelClass}>Negative keywords (optional, one per line)</label>
+              <Textarea
+                className="min-h-[70px] font-mono text-xs"
                 value={negativeKeywords}
                 onChange={(e) => setNegativeKeywords(e.target.value)}
               />
@@ -664,12 +715,62 @@ function KeywordGarageSection({
             {formError && <p className="text-sm text-destructive">{formError}</p>}
           </div>
           <SheetFooter className="flex-row justify-end gap-2">
-            <button onClick={handleSave} disabled={busy} className={primaryBtn}>
+            <Button onClick={handleSave} disabled={busy}>
               {busy ? "Saving…" : "Save"}
-            </button>
+            </Button>
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      <DeleteConfirm
+        item={pendingDelete}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={(t) => handleDelete(t)}
+        title="Delete keyword theme?"
+        describe={(t) => (
+          <>
+            This deletes the keyword theme <span className="font-medium text-foreground">{t.name}</span>.
+          </>
+        )}
+      />
     </Card>
+  );
+}
+
+/** Shared destructive-confirm dialog for the Library sections. */
+function DeleteConfirm<T>({
+  item,
+  onCancel,
+  onConfirm,
+  title,
+  describe,
+}: {
+  item: T | null;
+  onCancel: () => void;
+  onConfirm: (item: T) => void;
+  title: string;
+  describe: (item: T) => React.ReactNode;
+}) {
+  return (
+    <AlertDialog open={item !== null} onOpenChange={(o) => !o && onCancel()}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{item !== null ? describe(item) : null}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            onClick={() => {
+              if (item !== null) onConfirm(item);
+              onCancel();
+            }}
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
