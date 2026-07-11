@@ -17,6 +17,7 @@ async function requireStaff() {
 export interface Sku {
   id: string;
   sku: string;
+  position: number;
   created_at: string;
 }
 
@@ -27,8 +28,9 @@ export async function listSkus() {
   const client = await createClient();
   const { data, error: dbError } = await client
     .from("sku_master_list")
-    .select("id, sku, created_at")
-    .order("sku", { ascending: true });
+    .select("id, sku, position, created_at")
+    .order("position", { ascending: true })
+    .order("created_at", { ascending: true });
 
   return { data: data as Sku[] | null, error: dbError?.message ?? null };
 }
@@ -37,19 +39,113 @@ export async function addSkus(skus: string[]) {
   const { error } = await requireStaff();
   if (error) return { data: null, error };
 
-  const cleaned = [...new Set(skus.map((s) => s.trim().toUpperCase()).filter(Boolean))];
+  // SKUs are case-sensitive — preserve original case, only trim. Dedupe keeps first occurrence.
+  const cleaned = [...new Set(skus.map((s) => s.trim()).filter(Boolean))];
   if (cleaned.length === 0) return { data: null, error: "No SKUs provided" };
 
   const service = createServiceClient();
+
+  // New SKUs land at the end of the manual order, after the current max position.
+  const { data: maxRow } = await service
+    .from("sku_master_list")
+    .select("position")
+    .order("position", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const start = (maxRow?.position ?? -1) + 1;
+
   const { data, error: dbError } = await service
     .from("sku_master_list")
     .upsert(
-      cleaned.map((sku) => ({ sku })),
+      cleaned.map((sku, i) => ({ sku, position: start + i })),
       { onConflict: "sku", ignoreDuplicates: true }
     )
-    .select("id, sku, created_at");
+    .select("id, sku, position, created_at");
 
   return { data: data as Sku[] | null, error: dbError?.message ?? null };
+}
+
+/**
+ * Replace the entire master list with `skus`. After this runs the table holds exactly the
+ * provided SKUs, in the given order (`position` 0..n-1). Existing SKUs not in the list are
+ * removed. Done as upsert-then-delete (never a moment of emptiness).
+ */
+export async function replaceSkus(skus: string[]) {
+  const { error } = await requireStaff();
+  if (error) return { data: null, error };
+
+  // Preserve import order and original case (SKUs are case-sensitive); drop empties, dedupe keeping first occurrence.
+  const cleaned = [...new Set(skus.map((s) => s.trim()).filter(Boolean))];
+  if (cleaned.length === 0) return { data: null, error: "No SKUs provided" };
+
+  const service = createServiceClient();
+
+  // 1. Snapshot existing rows so we know which to delete afterwards.
+  const { data: existing, error: fetchError } = await service
+    .from("sku_master_list")
+    .select("id, sku");
+  if (fetchError) return { data: null, error: fetchError.message };
+
+  // 2. Upsert the imported set with fresh positions (kept SKUs re-positioned, new inserted).
+  const { error: upsertError } = await service
+    .from("sku_master_list")
+    .upsert(
+      cleaned.map((sku, i) => ({ sku, position: i })),
+      { onConflict: "sku" }
+    );
+  if (upsertError) return { data: null, error: upsertError.message };
+
+  // 3. Delete rows whose sku isn't in the imported set, by id, in chunks.
+  const keep = new Set(cleaned);
+  const staleIds = (existing ?? [])
+    .filter((r) => !keep.has(r.sku as string))
+    .map((r) => r.id as string);
+
+  for (let i = 0; i < staleIds.length; i += 200) {
+    const chunk = staleIds.slice(i, i + 200);
+    const { error: delError } = await service.from("sku_master_list").delete().in("id", chunk);
+    if (delError) return { data: null, error: delError.message };
+  }
+
+  return { data: { ok: true }, error: null };
+}
+
+/**
+ * Persist a new manual order for the master list. `orderedIds` is the full list of
+ * SKU ids in the desired top-to-bottom order; each row's `position` is set to its
+ * index. Ids not currently in the table are ignored by the upsert (they simply won't
+ * match an existing row's `sku` — but since we upsert on `id`, unknown ids would insert
+ * empty rows, so we filter to known ids first).
+ */
+export async function reorderSkus(orderedIds: string[]) {
+  const { error } = await requireStaff();
+  if (error) return { data: null, error };
+
+  if (orderedIds.length === 0) return { data: { ok: true }, error: null };
+
+  const service = createServiceClient();
+
+  // Only reorder ids that actually exist, so a stale client list can't insert junk rows.
+  // `sku` is included in each upsert row because it is NOT NULL — the upsert always
+  // conflicts on the existing id and updates position, but the candidate row must still
+  // carry a valid sku.
+  const { data: existing, error: fetchError } = await service
+    .from("sku_master_list")
+    .select("id, sku");
+  if (fetchError) return { data: null, error: fetchError.message };
+
+  const skuById = new Map((existing ?? []).map((r) => [r.id as string, r.sku as string]));
+  const rows = orderedIds
+    .filter((id) => skuById.has(id))
+    .map((id, index) => ({ id, sku: skuById.get(id)!, position: index }));
+
+  if (rows.length === 0) return { data: { ok: true }, error: null };
+
+  const { error: dbError } = await service
+    .from("sku_master_list")
+    .upsert(rows, { onConflict: "id" });
+
+  return { data: dbError ? null : { ok: true }, error: dbError?.message ?? null };
 }
 
 export async function deleteSku(id: string) {
@@ -174,7 +270,7 @@ function extractSkusFromSheet(opts: {
     if (!row) continue;
     const raw = row[skuCol];
     if (raw === null || raw === undefined) continue;
-    const sku = String(raw).trim().toUpperCase();
+    const sku = String(raw).trim();
     if (!sku) continue;
     found.add(sku);
     rowsFound++;
@@ -242,5 +338,7 @@ export async function parseSkuExcel(formData: FormData) {
     return { data: null, error: "Couldn't find any recognizable SKU column in this file" };
   }
 
-  return { data: { skus: [...found].sort(), warnings, detected }, error: null };
+  // Preserve the order SKUs appear in the file (Set iteration = insertion order).
+  // Do NOT sort — import order is persisted as `position` downstream.
+  return { data: { skus: [...found], warnings, detected }, error: null };
 }

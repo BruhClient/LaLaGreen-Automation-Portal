@@ -1,11 +1,11 @@
-# Graph Report - automation-portal  (2026-07-12)
+# Graph Report - automation-portal  (2026-07-11)
 
 ## Corpus Check
-- 88 files · ~42,252 words
+- 88 files · ~41,770 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 628 nodes · 1541 edges · 46 communities (24 shown, 22 thin omitted)
+- 627 nodes · 1537 edges · 45 communities (22 shown, 23 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 1 edges (avg confidence: 0.5)
 - Token cost: 0 input · 0 output
 
@@ -58,12 +58,11 @@
 - [[_COMMUNITY_sku-list.ts|sku-list.ts]]
 - [[_COMMUNITY_tabs.tsx|tabs.tsx]]
 - [[_COMMUNITY_page-header.tsx|page-header.tsx]]
-- [[_COMMUNITY_tools.ts|tools.ts]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `cn()` - 88 edges
 2. `getSession()` - 33 edges
-3. `createServiceClient()` - 32 edges
+3. `createServiceClient()` - 31 edges
 4. `createClient()` - 30 edges
 5. `requireStaff()` - 21 edges
 6. `compilerOptions` - 16 edges
@@ -73,33 +72,33 @@
 10. `POST()` - 11 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `SheetOverlay()` --calls--> `cn()`  [EXTRACTED]
-  components/ui/sheet.tsx → lib/utils.ts
-- `PpcTopUpLayout()` --calls--> `assertItemAccess()`  [EXTRACTED]
-  app/(portal)/automations/ppc-top-up/layout.tsx → lib/permissions.ts
-- `PriceChangePlansLayout()` --calls--> `assertItemAccess()`  [EXTRACTED]
-  app/(portal)/automations/price-change-plans/layout.tsx → lib/permissions.ts
-- `NewPricePlanSheet()` --calls--> `listSkus()`  [EXTRACTED]
-  app/(portal)/automations/price-change-plans/page.tsx → lib/actions/sku-list.ts
-- `MasterListLayout()` --calls--> `assertItemAccess()`  [EXTRACTED]
-  app/(portal)/configuration/master-list/layout.tsx → lib/permissions.ts
+- `AlertDialogOverlay()` --calls--> `cn()`  [EXTRACTED]
+  components/ui/alert-dialog.tsx → lib/utils.ts
+- `AlertDialogMedia()` --calls--> `cn()`  [EXTRACTED]
+  components/ui/alert-dialog.tsx → lib/utils.ts
+- `AvatarImage()` --calls--> `cn()`  [EXTRACTED]
+  components/ui/avatar.tsx → lib/utils.ts
+- `AvatarBadge()` --calls--> `cn()`  [EXTRACTED]
+  components/ui/avatar.tsx → lib/utils.ts
+- `AvatarGroup()` --calls--> `cn()`  [EXTRACTED]
+  components/ui/avatar.tsx → lib/utils.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (46 total, 22 thin omitted)
+## Communities (45 total, 23 thin omitted)
 
 ### Community 0 - "Shared UI Components & Layout Shell"
 Cohesion: 0.16
-Nodes (18): POST(), BrandRow, IncomingCampaign, ResolveErr, resolveMarketplace(), ResolveOk, isAllowed(), BaseCampaignInput (+10 more)
+Nodes (17): daysRemaining(), EditPricePlanForm(), formatDate(), formatPrice(), HistoryTable(), NewPricePlanSheet(), PlanCard(), PlansList() (+9 more)
 
 ### Community 1 - "PPC Top-Up Automation"
-Cohesion: 0.11
-Nodes (44): isManualTopUpFuture(), LiveProjectionCard(), nextUpcomingSlot(), PpcTopUpPage(), relativeDayLabel(), statusBadgeClass(), toNumericAmount(), PpcTopUpCharts() (+36 more)
+Cohesion: 0.10
+Nodes (45): isManualTopUpFuture(), LiveProjectionCard(), nextUpcomingSlot(), PpcTopUpPage(), relativeDayLabel(), statusBadgeClass(), toNumericAmount(), PpcTopUpCharts() (+37 more)
 
 ### Community 2 - "Auth & Staff Management"
-Cohesion: 0.13
-Nodes (28): budgetFor(), POST(), AD_GROUP_MEDIA, AD_MEDIA, AdsCountry, adsHeaders(), adsPost(), AdsProfile (+20 more)
+Cohesion: 0.08
+Nodes (44): BrandRow, IncomingCampaign, ResolveErr, resolveMarketplace(), ResolveOk, budgetFor(), POST(), AD_GROUP_MEDIA (+36 more)
 
 ### Community 3 - "Package Dependencies (package.json)"
 Cohesion: 0.05
@@ -114,7 +113,7 @@ Cohesion: 0.09
 Nodes (21): aliases, components, hooks, lib, ui, utils, iconLibrary, menuAccent (+13 more)
 
 ### Community 6 - "PPC Schedule AI Import"
-Cohesion: 0.16
+Cohesion: 0.17
 Nodes (18): AMOUNT_HINTS, analyzeScheduleImport(), ColumnDetectSchema, ColumnMapping, COUNTRY_ALIASES, COUNTRY_HINTS, detectColumnsHeuristically(), detectColumnsWithAi() (+10 more)
 
 ### Community 7 - "TypeScript Config"
@@ -122,80 +121,72 @@ Cohesion: 0.10
 Nodes (19): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModules, jsx, lib, module (+11 more)
 
 ### Community 8 - "product-block.tsx"
-Cohesion: 0.07
-Nodes (45): blockIssues(), BlockSummary, buildCampaigns(), buildName(), Campaign, campaignCountForBlock(), distributeKeywords(), shuffle() (+37 more)
+Cohesion: 0.10
+Nodes (27): UPLOADABLE_COUNTRIES, UploadResponse, Asset, Block, Brand, newBlock(), Preset, ProductBlock() (+19 more)
 
 ### Community 9 - "Dashboard, Projects & Tools Registry"
-Cohesion: 0.23
-Nodes (12): SidebarContent(), ALL_ITEM_IDS, canManageUsers(), EMPTY_PERMISSIONS, filterItems(), PermissionSet, Role, ROLES (+4 more)
+Cohesion: 0.05
+Nodes (76): POST(), POST(), POST(), ACCESS_SECTIONS, accessSummary(), ManageUsersPage(), StaffMember, PpcTopUpLayout() (+68 more)
 
 ### Community 10 - "utils.ts"
-Cohesion: 0.27
-Nodes (14): ACCESS_SECTIONS, accessSummary(), ManageUsersPage(), StaffMember, createStaffMember(), deleteStaffMember(), getCurrentUser(), listStaff() (+6 more)
+Cohesion: 0.18
+Nodes (14): LoginForm(), Card(), CardAction(), CardContent(), CardDescription(), CardFooter(), CardHeader(), CardTitle() (+6 more)
 
 ### Community 11 - "Sponsored Brands Bulk XLSX Builder"
-Cohesion: 0.06
-Nodes (44): ChatPanel(), markdownComponents, AlertDialogMedia(), AlertDialogOverlay(), Avatar(), AvatarBadge(), AvatarFallback(), AvatarGroup() (+36 more)
+Cohesion: 0.10
+Nodes (18): Avatar(), AvatarBadge(), AvatarFallback(), AvatarGroup(), AvatarGroupCount(), AvatarImage(), DropdownMenu(), DropdownMenuCheckboxItem() (+10 more)
 
 ### Community 23 - "LaLaGreen Automation Portal — Developer Guide"
 Cohesion: 0.07
 Nodes (26): Adding a New Project, Adding a new staff member, Adding a New Tool, Amazon Advertising API (Sponsored Brands Upload → "Upload to Amazon"), Architecture, Auth System, Database (Supabase), Environment variables (+18 more)
 
 ### Community 24 - "sp-api.ts"
-Cohesion: 0.08
-Nodes (45): daysRemaining(), EditPricePlanForm(), formatDate(), formatPrice(), HistoryTable(), NewPricePlanSheet(), PlanCard(), PlansList() (+37 more)
+Cohesion: 0.11
+Nodes (31): formatPrice(), SkuDetailDialog(), cancelPricePlan(), createPricePlan(), listPricePlans(), PriceType, requireStaff(), updatePricePlan() (+23 more)
 
 ### Community 25 - "projects.ts"
-Cohesion: 0.17
-Nodes (13): ConfigurationItem, ConfigurationItemInput, configurationItems, defineConfigurationItem(), masterList, slugify(), AutomationProject, defineProject() (+5 more)
+Cohesion: 0.13
+Nodes (12): AlertDialog(), AlertDialogCancel(), Sheet(), SheetClose(), SheetContent(), SheetDescription(), SheetFooter(), SheetHeader() (+4 more)
 
 ### Community 26 - "chart.tsx"
 Cohesion: 0.29
-Nodes (10): POST(), POST(), toRole(), clearSessionCookie(), getSecretKey(), setSessionCookie(), signSession(), verifySessionToken() (+2 more)
+Nodes (5): markdownComponents, Button(), buttonVariants, Skeleton(), Textarea()
 
 ### Community 27 - "README.md"
 Cohesion: 0.50
 Nodes (3): Deploy on Vercel, Getting Started, Learn More
 
 ### Community 41 - "build.ts"
-Cohesion: 0.23
-Nodes (9): DirectoryEntry, TeamPage(), sendAiChatMessage(), getStaffDirectory(), ChatMessage, generateAssistantReply(), chatToolDefinitions, runChatTool() (+1 more)
+Cohesion: 0.25
+Nodes (13): blockIssues(), BlockSummary, buildCampaigns(), buildName(), Campaign, campaignCountForBlock(), distributeKeywords(), shuffle() (+5 more)
 
 ### Community 42 - "sku-list.ts"
-Cohesion: 0.10
-Nodes (27): formatPrice(), SkuDetailDialog(), LoginForm(), PageHeader(), Card(), CardAction(), CardContent(), CardDescription() (+19 more)
+Cohesion: 0.23
+Nodes (14): addSkus(), ColumnDetectSchema, ColumnMapping, deleteSku(), detectColumnHeuristically(), detectColumnWithAi(), DetectedSkuSheet, extractSkusFromSheet() (+6 more)
 
 ### Community 43 - "tabs.tsx"
 Cohesion: 0.33
-Nodes (5): PpcTopUpLayout(), PriceChangePlansLayout(), MasterListLayout(), SponsoredBrandsUploadLayout(), assertItemAccess()
-
-### Community 44 - "page-header.tsx"
-Cohesion: 0.48
-Nodes (6): DashboardPage(), PortalLayout(), Sidebar(), Topbar(), getMyPermissions(), getSession()
-
-### Community 45 - "tools.ts"
-Cohesion: 0.33
-Nodes (6): AutomationTool, bulkCampaignUpload, defineTool(), slugify(), ToolInput, tools
+Nodes (7): SegmentedControl(), SegmentOption, Tabs(), TabsContent(), TabsList(), tabsListVariants, TabsTrigger()
 
 ## Knowledge Gaps
 - **174 isolated node(s):** `StaffMember`, `ACCESS_SECTIONS`, `PRICE_TYPES`, `PriceTypeOption`, `DirectoryEntry` (+169 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **22 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **23 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `cn()` connect `Sponsored Brands Bulk XLSX Builder` to `PPC Top-Up Automation`, `product-block.tsx`, `Dashboard, Projects & Tools Registry`, `sku-list.ts`, `page-header.tsx`?**
+- **Why does `cn()` connect `utils.ts` to `Shared UI Components & Layout Shell`, `PPC Top-Up Automation`, `product-block.tsx`, `Dashboard, Projects & Tools Registry`, `Sponsored Brands Bulk XLSX Builder`, `page-header.tsx`, `tabs.tsx`, `projects.ts`, `chart.tsx`?**
   _High betweenness centrality (0.124) - this node is a cross-community bridge._
 - **Why does `dependencies` connect `Package Dependencies (package.json)` to `PPC Top-Up Automation`, `PPC Schedule AI Import`?**
   _High betweenness centrality (0.104) - this node is a cross-community bridge._
-- **Why does `xlsx` connect `PPC Schedule AI Import` to `Shared UI Components & Layout Shell`, `sku-list.ts`, `Package Dependencies (package.json)`?**
+- **Why does `xlsx` connect `PPC Schedule AI Import` to `Package Dependencies (package.json)`, `sku-list.ts`, `Auth & Staff Management`?**
   _High betweenness centrality (0.064) - this node is a cross-community bridge._
 - **What connects `StaffMember`, `ACCESS_SECTIONS`, `PRICE_TYPES` to the rest of the system?**
   _177 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `PPC Top-Up Automation` be split into smaller, more focused modules?**
-  _Cohesion score 0.10784313725490197 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.10272536687631027 - nodes in this community are weakly interconnected._
 - **Should `Auth & Staff Management` be split into smaller, more focused modules?**
-  _Cohesion score 0.13333333333333333 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07535460992907801 - nodes in this community are weakly interconnected._
 - **Should `Package Dependencies (package.json)` be split into smaller, more focused modules?**
   _Cohesion score 0.047619047619047616 - nodes in this community are weakly interconnected._

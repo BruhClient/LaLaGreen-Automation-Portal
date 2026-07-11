@@ -1,6 +1,24 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { GripVertical } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardAction } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,7 +44,9 @@ import { masterList } from "@/lib/configuration";
 import {
   listSkus,
   addSkus,
+  replaceSkus,
   deleteSku,
+  reorderSkus,
   parseSkuExcel,
   type Sku,
   type DetectedSkuSheet,
@@ -53,6 +73,11 @@ export default function MasterListPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [selected, setSelected] = useState<Sku | null>(null);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
   async function refresh() {
     const { data, error } = await listSkus();
     if (error) setError(error);
@@ -72,7 +97,30 @@ export default function MasterListPage() {
     refresh();
   }
 
-  const filtered = (skus ?? []).filter((s) => s.sku.includes(search.trim().toUpperCase()));
+  const isFiltering = search.trim() !== "";
+  // SKUs are stored case-sensitively, but search stays case-insensitive for usability.
+  const query = search.trim().toLowerCase();
+  const filtered = (skus ?? []).filter((s) => s.sku.toLowerCase().includes(query));
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !skus) return;
+    const oldIndex = skus.findIndex((s) => s.id === active.id);
+    const newIndex = skus.findIndex((s) => s.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const previous = skus;
+    const next = arrayMove(skus, oldIndex, newIndex);
+    setSkus(next); // optimistic
+    reorderSkus(next.map((s) => s.id)).then(({ error }) => {
+      if (error) {
+        setError(error);
+        setSkus(previous); // revert on failure
+      } else {
+        setError(null);
+      }
+    });
+  }
 
   return (
     <>
@@ -106,36 +154,44 @@ export default function MasterListPage() {
               <p className="text-sm text-muted-foreground">No SKUs yet — add some manually or import an Excel file.</p>
             ) : (
               <>
-                <input
-                  className={`${inputClass} mb-3`}
-                  placeholder="Filter SKUs…"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                <div className="space-y-2">
-                  {filtered.map((s) => (
-                    <div
-                      key={s.id}
-                      className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm"
-                    >
-                      <button
-                        onClick={() => setSelected(s)}
-                        className="min-w-0 flex-1 truncate text-left font-mono hover:underline"
-                      >
-                        {s.sku}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(s)}
-                        className="ml-3 shrink-0 text-destructive hover:underline"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                  {filtered.length === 0 && (
-                    <p className="text-sm text-muted-foreground">No SKUs match &quot;{search}&quot;.</p>
-                  )}
+                <div className="mb-3 space-y-1">
+                  <input
+                    className={inputClass}
+                    placeholder="Filter SKUs…"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {isFiltering
+                      ? "Clear the filter to drag SKUs into a new order."
+                      : "Drag the handle to reorder — the order is saved automatically."}
+                  </p>
                 </div>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={filtered.map((s) => s.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-2">
+                      {filtered.map((s) => (
+                        <SortableSkuRow
+                          key={s.id}
+                          sku={s}
+                          dragDisabled={isFiltering}
+                          onSelect={() => setSelected(s)}
+                          onDelete={() => handleDelete(s)}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+                {filtered.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No SKUs match &quot;{search}&quot;.</p>
+                )}
               </>
             )}
           </CardContent>
@@ -151,6 +207,62 @@ export default function MasterListPage() {
       />
       <SkuDetailDialog sku={selected} onOpenChange={(open) => !open && setSelected(null)} />
     </>
+  );
+}
+
+function SortableSkuRow({
+  sku,
+  dragDisabled,
+  onSelect,
+  onDelete,
+}: {
+  sku: Sku;
+  dragDisabled: boolean;
+  onSelect: () => void;
+  onDelete: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: sku.id,
+    disabled: dragDisabled,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  // Whole row is the drag surface (more robust than a tiny handle button). The grip is a
+  // visual affordance only. Inner buttons still click through: PointerSensor's 4px
+  // activation constraint treats a press without movement as a click, not a drag.
+  const dragProps = dragDisabled ? {} : { ...attributes, ...listeners };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...dragProps}
+      className={`flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm select-none ${
+        dragDisabled ? "cursor-default" : "cursor-grab touch-none active:cursor-grabbing"
+      } ${isDragging ? "z-10 shadow-md" : ""}`}
+    >
+      <span
+        aria-hidden
+        className={`-ml-1 shrink-0 text-muted-foreground ${dragDisabled ? "opacity-30" : ""}`}
+      >
+        <GripVertical className="size-4" />
+      </span>
+      <button
+        onClick={onSelect}
+        className={`min-w-0 flex-1 truncate text-left font-mono hover:underline ${
+          dragDisabled ? "cursor-default" : "cursor-grab active:cursor-grabbing"
+        }`}
+      >
+        {sku.sku}
+      </button>
+      <button onClick={onDelete} className="ml-1 shrink-0 text-destructive hover:underline">
+        Remove
+      </button>
+    </div>
   );
 }
 
@@ -235,6 +347,7 @@ function ImportSkusSheet({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [warnings, setWarnings] = useState<string[]>([]);
   const [detected, setDetected] = useState<DetectedSkuSheet[] | null>(null);
+  const [mode, setMode] = useState<"append" | "overwrite">("append");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -246,6 +359,7 @@ function ImportSkusSheet({
     setSelected(new Set());
     setWarnings([]);
     setDetected(null);
+    setMode("append");
     setError(null);
   }
 
@@ -283,9 +397,20 @@ function ImportSkusSheet({
   }
 
   function handleApply() {
-    if (selected.size === 0) return;
+    if (selected.size === 0 || !extractedSkus) return;
+    // Follow the file's order regardless of the order rows were toggled.
+    const applied = extractedSkus.filter((s) => selected.has(s));
+
+    if (mode === "overwrite") {
+      const ok = window.confirm(
+        `Overwrite the entire master list with these ${applied.length} SKUs? SKUs not in this import will be removed.`
+      );
+      if (!ok) return;
+    }
+
     startTransition(async () => {
-      const { error } = await addSkus([...selected]);
+      const { error } =
+        mode === "overwrite" ? await replaceSkus(applied) : await addSkus(applied);
       if (error) {
         setError(error);
         return;
@@ -374,6 +499,26 @@ function ImportSkusSheet({
 
           {extractedSkus && extractedSkus.length > 0 && (
             <div className="space-y-1.5">
+              <div className="space-y-1">
+                <div className="inline-flex rounded-md border border-input p-0.5">
+                  {(["append", "overwrite"] as const).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => setMode(m)}
+                      className={`rounded px-3 py-1 text-sm font-medium capitalize transition-colors ${
+                        mode === m ? "bg-primary text-primary-foreground" : "hover:bg-accent"
+                      }`}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {mode === "overwrite"
+                    ? "Replaces the entire master list with these SKUs."
+                    : "Adds these to the existing list."}
+                </p>
+              </div>
               <p className="text-xs font-medium text-muted-foreground">
                 {selected.size} of {extractedSkus.length} selected — uncheck any that shouldn&apos;t be added
               </p>
@@ -406,7 +551,11 @@ function ImportSkusSheet({
             disabled={!extractedSkus || selected.size === 0 || isPending}
             className={primaryBtn}
           >
-            {isPending ? "Applying…" : `Add ${selected.size || ""} SKU${selected.size === 1 ? "" : "s"}`}
+            {isPending
+              ? "Applying…"
+              : mode === "overwrite"
+                ? `Overwrite with ${selected.size || ""} SKU${selected.size === 1 ? "" : "s"}`
+                : `Add ${selected.size || ""} SKU${selected.size === 1 ? "" : "s"}`}
           </button>
         </SheetFooter>
       </SheetContent>
