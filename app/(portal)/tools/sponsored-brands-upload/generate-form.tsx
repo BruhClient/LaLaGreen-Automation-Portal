@@ -546,6 +546,12 @@ export default function GenerateForm({
                   {r.ok && r.campaignId && (
                     <p className="mt-0.5 font-mono text-xs text-muted-foreground">#{r.campaignId}</p>
                   )}
+                  {!r.ok && r.campaignId && (
+                    <p className="mt-0.5 text-xs text-destructive">
+                      ⚠ Campaign #{r.campaignId} was created but left incomplete — archive it in
+                      Amazon Ads console.
+                    </p>
+                  )}
                   {!r.ok && r.error && (
                     <p className="mt-0.5 text-xs text-destructive break-words">{r.error}</p>
                   )}

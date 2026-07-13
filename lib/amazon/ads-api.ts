@@ -371,8 +371,9 @@ export async function uploadSbCampaign(
   profileId: string,
   c: UploadCampaign
 ): Promise<UploadResult> {
+  let campaignId: string | undefined;
   try {
-    const campaignId = await createSbCampaign(profileId, {
+    campaignId = await createSbCampaign(profileId, {
       name: c.campaignName,
       budget: c.budget,
       startDate: c.startDate,
@@ -428,6 +429,7 @@ export async function uploadSbCampaign(
     return {
       campaignName: c.campaignName,
       ok: false,
+      campaignId,
       error: err instanceof Error ? err.message : "Upload failed",
     };
   }
