@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { ArrowDown, ArrowUp, CheckCircle2, Clock, Pencil, X, XCircle } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -28,9 +28,17 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { priceChangePlans } from "@/lib/projects";
 import { listSkus, type Sku } from "@/lib/actions/sku-list";
-import { fetchSkuDetail } from "@/lib/actions/pricing-update";
-import { listPricePlans, createPricePlan, updatePricePlan, cancelPricePlan, type PricePlan } from "@/lib/actions/price-change-plans";
-import type { MarketplaceCode, SkuDetail } from "@/lib/amazon/sp-api";
+import { fetchSkuDetail, fetchSkuPricing } from "@/lib/actions/pricing-update";
+import {
+  listPricePlans,
+  createPricePlan,
+  createBulkPricePlans,
+  updatePricePlan,
+  cancelPricePlan,
+  type PricePlan,
+} from "@/lib/actions/price-change-plans";
+import { analyzeBulkPriceImport, type DetectedPriceImportSheet } from "@/lib/actions/price-plan-import";
+import type { MarketplaceCode, SkuDetail, PricingResult } from "@/lib/amazon/sp-api";
 
 const inputClass =
   "w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
@@ -67,6 +75,7 @@ export default function PriceChangePlansPage() {
   const [plans, setPlans] = useState<PricePlan[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [bulkSheetOpen, setBulkSheetOpen] = useState(false);
   const [editPlan, setEditPlan] = useState<PricePlan | null>(null);
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -117,9 +126,14 @@ export default function PriceChangePlansPage() {
                   this page only defines the plan and shows progress.
                 </CardDescription>
               </div>
-              <Button onClick={() => setSheetOpen(true)} className="w-full sm:w-auto">
-                + New Plan
-              </Button>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button variant="outline" onClick={() => setBulkSheetOpen(true)} className="w-full sm:w-auto">
+                  + Bulk Plan
+                </Button>
+                <Button onClick={() => setSheetOpen(true)} className="w-full sm:w-auto">
+                  + New Plan
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -145,6 +159,16 @@ export default function PriceChangePlansPage() {
         onOpenChange={setSheetOpen}
         onCreated={() => {
           setSheetOpen(false);
+          reloadPlans();
+        }}
+      />
+
+      <NewBulkPricePlanSheet
+        open={bulkSheetOpen}
+        activePlans={(plans ?? []).filter((p) => p.status === "active")}
+        onOpenChange={setBulkSheetOpen}
+        onCreated={() => {
+          setBulkSheetOpen(false);
           reloadPlans();
         }}
       />
@@ -741,6 +765,409 @@ function NewPricePlanSheet({
           <Button onClick={handleCreate} disabled={!canCreate}>
             {isPending ? "Creating…" : "Create Plan"}
           </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function NewBulkPricePlanSheet({
+  open,
+  activePlans,
+  onOpenChange,
+  onCreated,
+}: {
+  open: boolean;
+  activePlans: PricePlan[];
+  onOpenChange: (open: boolean) => void;
+  onCreated: () => void;
+}) {
+  const [phase, setPhase] = useState<"select" | "review" | "results">("select");
+  const [isDragging, setIsDragging] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [marketplace, setMarketplace] = useState<MarketplaceCode>("US");
+  const [priceType, setPriceType] = useState<PriceTypeOption>("your_price");
+  const [pricingMap, setPricingMap] = useState<Map<string, PricingResult> | null>(null);
+  const [targets, setTargets] = useState<Record<string, string>>({});
+  const [increment, setIncrement] = useState(DEFAULT_INCREMENT);
+  const [detected, setDetected] = useState<DetectedPriceImportSheet[] | null>(null);
+  const [importWarnings, setImportWarnings] = useState<string[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [results, setResults] = useState<{ created: number; skipped: { sku: string; error: string }[] } | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const priceLabel = priceTypeLabel(priceType);
+
+  function resetAll() {
+    setPhase("select");
+    setIsDragging(false);
+    setSelected(new Set());
+    setMarketplace("US");
+    setPriceType("your_price");
+    setPricingMap(null);
+    setTargets({});
+    setIncrement(DEFAULT_INCREMENT);
+    setDetected(null);
+    setImportWarnings([]);
+    setLoadError(null);
+    setCreateError(null);
+    setResults(null);
+  }
+
+  function handleFile(file: File) {
+    setLoadError(null);
+    setDetected(null);
+    setImportWarnings([]);
+    const formData = new FormData();
+    formData.set("file", file);
+    startTransition(async () => {
+      const { data, error } = await analyzeBulkPriceImport(formData);
+      if (error || !data) {
+        setLoadError(error ?? "Failed to parse file");
+        return;
+      }
+      setDetected(data.detected);
+      setImportWarnings(data.warnings);
+      setSelected(new Set(data.rows.map((r) => r.sku)));
+      setTargets(Object.fromEntries(data.rows.map((r) => [r.sku, r.targetPrice !== null ? String(r.targetPrice) : ""])));
+    });
+  }
+
+  function loadPrices() {
+    setLoadError(null);
+    startTransition(async () => {
+      const list = Array.from(selected);
+      const { data, error } = await fetchSkuPricing(list, marketplace);
+      if (error || !data) {
+        setLoadError(error ?? "Failed to fetch pricing");
+        return;
+      }
+      setPricingMap(new Map(data.map((p) => [p.sku, p])));
+      setPhase("review");
+    });
+  }
+
+  function removeRow(sku: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.delete(sku);
+      return next;
+    });
+    setTargets((prev) => {
+      const next = { ...prev };
+      delete next[sku];
+      return next;
+    });
+  }
+
+  const rowSkus = Array.from(selected);
+  const missingTargetCount = rowSkus.filter((sku) => !(targets[sku] ?? "").trim()).length;
+
+  function currentPriceFor(sku: string): number | null {
+    const detail = pricingMap?.get(sku);
+    if (!detail) return null;
+    return priceType === "sale_price" ? detail.discountedPrice ?? detail.salesPrice ?? null : detail.salesPrice ?? null;
+  }
+
+  function isDuplicateFor(sku: string): boolean {
+    return activePlans.some((p) => p.sku === sku && p.marketplace === marketplace && p.price_type === priceType);
+  }
+
+  const incrementNum = Number(increment);
+  const hasValidIncrement = increment.trim() !== "" && Number.isFinite(incrementNum) && incrementNum > 0;
+
+  const eligibleRows = rowSkus.filter((sku) => currentPriceFor(sku) !== null && !isDuplicateFor(sku));
+  const allTargetsValid = eligibleRows.every((sku) => {
+    const t = Number(targets[sku]);
+    const current = currentPriceFor(sku);
+    return (targets[sku] ?? "").trim() !== "" && Number.isFinite(t) && current !== null && t !== current;
+  });
+
+  const canCreate = eligibleRows.length > 0 && allTargetsValid && hasValidIncrement && !isPending;
+
+  function handleCreate() {
+    if (!canCreate) return;
+    setCreateError(null);
+    startTransition(async () => {
+      const payload = eligibleRows.map((sku) => ({ sku, targetPrice: Number(targets[sku]) }));
+      const { data, error } = await createBulkPricePlans({
+        skus: payload,
+        marketplace,
+        priceType,
+        increment: incrementNum,
+      });
+      if (error || !data) {
+        setCreateError(error ?? "Failed to create plans");
+        return;
+      }
+      setResults({ created: data.created.length, skipped: data.skipped });
+      setPhase("results");
+    });
+  }
+
+  function finish() {
+    resetAll();
+    onCreated();
+  }
+
+  return (
+    <Sheet
+      open={open}
+      onOpenChange={(next) => {
+        onOpenChange(next);
+        if (!next) resetAll();
+      }}
+    >
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>Bulk Price Change Plans</SheetTitle>
+          <SheetDescription>
+            {phase === "select"
+              ? "Pick a marketplace and price type, then upload an Excel file with the SKUs and target prices."
+              : phase === "review"
+                ? "Set a target price for each SKU — every price must be filled in."
+                : "Here's what happened."}
+          </SheetDescription>
+        </SheetHeader>
+
+        <div className="flex-1 space-y-4 overflow-y-auto px-4">
+          {phase === "select" && (
+            <>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Marketplace</label>
+                <select
+                  value={marketplace}
+                  onChange={(e) => setMarketplace(e.target.value as MarketplaceCode)}
+                  className={inputClass}
+                >
+                  <option value="US">US</option>
+                  <option value="CA">Canada</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Price to update</label>
+                <div className="grid grid-cols-2 gap-1 rounded-md border border-input p-1">
+                  {PRICE_TYPES.map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setPriceType(type)}
+                      className={`rounded px-2.5 py-1.5 text-sm font-medium transition-colors ${
+                        priceType === type ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"
+                      }`}
+                    >
+                      {priceTypeLabel(type)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-1 flex items-center justify-between">
+                  <label className="block text-xs font-medium text-muted-foreground">SKUs</label>
+                  {selected.size > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelected(new Set());
+                        setTargets({});
+                        setDetected(null);
+                        setImportWarnings([]);
+                      }}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      Upload a different file
+                    </button>
+                  )}
+                </div>
+
+                {selected.size === 0 ? (
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragging(true);
+                    }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDragging(false);
+                      const file = e.dataTransfer.files[0];
+                      if (file) handleFile(file);
+                    }}
+                    className={`flex flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed p-8 text-center text-sm transition-colors ${
+                      isDragging ? "border-primary bg-primary/5" : "border-input"
+                    }`}
+                  >
+                    <p className="text-muted-foreground">Drag an Excel file here, or</p>
+                    <Button type="button" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isPending}>
+                      Browse
+                    </Button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".xlsx,.xls"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFile(file);
+                        e.target.value = "";
+                      }}
+                    />
+                    {isPending && <p className="text-xs text-muted-foreground">Analyzing with Claude…</p>}
+                  </div>
+                ) : (
+                  <div className="rounded-md border border-border bg-muted/30 px-3 py-2.5 text-sm">
+                    Found <span className="font-medium">{selected.size}</span> SKU{selected.size === 1 ? "" : "s"} in the
+                    file
+                    {missingTargetCount > 0 ? (
+                      <span className="text-muted-foreground"> — {missingTargetCount} still need a target price, next.</span>
+                    ) : (
+                      <span className="text-muted-foreground"> — every row already has a target price from the file.</span>
+                    )}
+                  </div>
+                )}
+
+                {detected && detected.length > 0 && (
+                  <div className="mt-2 space-y-1 rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                    {detected.map((d) => (
+                      <p key={d.sheetName}>
+                        <span className="font-medium text-foreground">{d.sheetName}</span>: {d.rowsFound} row
+                        {d.rowsFound === 1 ? "" : "s"} in column &quot;{d.skuColumnLabel}&quot;
+                        {d.targetColumnLabel
+                          ? `, target price in "${d.targetColumnLabel}"`
+                          : ", no target price column found"}
+                        {d.source === "ai" ? " (Claude-detected)" : ""}
+                      </p>
+                    ))}
+                  </div>
+                )}
+
+                {importWarnings.length > 0 && (
+                  <div className="mt-2 space-y-1 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                    {importWarnings.map((w, i) => (
+                      <p key={i}>{w}</p>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {loadError && (
+                <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {loadError}
+                </div>
+              )}
+            </>
+          )}
+
+          {phase === "review" && (
+            <>
+              <button type="button" onClick={() => setPhase("select")} className="text-xs text-primary hover:underline">
+                ← Back to selection
+              </button>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Increment ($)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className={inputClass}
+                  value={increment}
+                  onChange={(e) => setIncrement(e.target.value)}
+                />
+                <p className="mt-1 text-xs text-muted-foreground">Applied to every plan in this batch.</p>
+              </div>
+
+              {createError && (
+                <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {createError}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                {rowSkus.map((sku) => {
+                  const current = currentPriceFor(sku);
+                  const duplicate = isDuplicateFor(sku);
+                  const detail = pricingMap?.get(sku);
+                  const targetVal = targets[sku] ?? "";
+                  const targetNum = Number(targetVal);
+                  const isFilled = targetVal.trim() !== "" && Number.isFinite(targetNum);
+                  const sameAsCurrent = isFilled && current !== null && targetNum === current;
+
+                  return (
+                    <div key={sku} className="rounded-md border border-border p-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-mono text-sm font-medium">{sku}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeRow(sku)}
+                          className="text-muted-foreground hover:text-foreground"
+                          aria-label="Remove SKU"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </div>
+                      {duplicate ? (
+                        <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+                          Already has an active {priceLabel} plan — excluded.
+                        </p>
+                      ) : current === null ? (
+                        <p className="mt-1 text-xs text-destructive">
+                          {detail?.error ?? `No current ${priceLabel.toLowerCase()} on Amazon`} — excluded.
+                        </p>
+                      ) : (
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Current: {formatPrice(current)}</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            placeholder="Target ($)"
+                            value={targetVal}
+                            onChange={(e) => setTargets((prev) => ({ ...prev, [sku]: e.target.value }))}
+                            className={`${inputClass} w-28 ${!isFilled ? "border-destructive/50" : ""}`}
+                          />
+                          {sameAsCurrent && <span className="text-xs text-destructive">Must differ from current price</span>}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {phase === "results" && results && (
+            <div className="space-y-3">
+              <div className="rounded-md border border-border bg-muted/30 px-3 py-2.5 text-sm">
+                Created {results.created} plan{results.created === 1 ? "" : "s"}.
+              </div>
+              {results.skipped.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">Skipped:</p>
+                  {results.skipped.map((s) => (
+                    <p key={s.sku} className="text-xs text-muted-foreground">
+                      <span className="font-mono">{s.sku}</span> — {s.error}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <SheetFooter>
+          {phase === "select" && (
+            <Button onClick={loadPrices} disabled={selected.size === 0 || isPending}>
+              {isPending ? "Loading…" : "Continue"}
+            </Button>
+          )}
+          {phase === "review" && (
+            <Button onClick={handleCreate} disabled={!canCreate}>
+              {isPending ? "Creating…" : "Create Plans"}
+            </Button>
+          )}
+          {phase === "results" && <Button onClick={finish}>Done</Button>}
         </SheetFooter>
       </SheetContent>
     </Sheet>

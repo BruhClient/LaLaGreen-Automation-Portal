@@ -426,7 +426,7 @@ function ImportSkusSheet({
         <SheetHeader>
           <SheetTitle>Use AI — Import SKUs</SheetTitle>
           <SheetDescription>
-            Drop an Excel file and Claude will locate the SKU column, even if the sheet isn&apos;t formatted consistently.
+            Drop an Excel file and Claude will locate the SKU column and skip inactive items, even if the sheet isn&apos;t formatted consistently.
           </SheetDescription>
         </SheetHeader>
 
@@ -492,6 +492,9 @@ function ImportSkusSheet({
                   <span className="font-medium text-foreground">{d.sheetName}</span>: found{" "}
                   {d.rowsFound} SKU{d.rowsFound === 1 ? "" : "s"} in column &quot;{d.skuColumnLabel}&quot;
                   {d.source === "ai" ? " (Claude-detected)" : ""}
+                  {d.inactiveExcluded > 0
+                    ? ` (${d.inactiveExcluded} excluded as inactive)`
+                    : ""}
                 </p>
               ))}
             </div>

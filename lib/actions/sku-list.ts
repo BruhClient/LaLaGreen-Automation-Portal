@@ -161,14 +161,40 @@ export async function deleteSku(id: string) {
 // --- AI-assisted Excel import ---
 
 const SKU_HINTS = ["sku", "item number", "item #", "item no", "product code", "asin", "product id"];
+const STATUS_HINTS = ["status", "active", "enabled", "live", "state"];
+
+// Normalized (trim + lowercase) exact-match values that mean a row's SKU is inactive/discontinued.
+const INACTIVE_KEYWORDS = [
+  "inactive",
+  "disabled",
+  "discontinued",
+  "no",
+  "n",
+  "false",
+  "0",
+  "archived",
+  "suspended",
+  "paused",
+  "delisted",
+  "removed",
+  "out of stock",
+];
 
 function normalizeHeader(cell: unknown): string {
   return String(cell ?? "").trim().toLowerCase();
 }
 
+function isInactive(rawValue: unknown, hints: string[] = []): boolean {
+  const v = String(rawValue ?? "").trim().toLowerCase();
+  if (!v) return false;
+  return INACTIVE_KEYWORDS.includes(v) || hints.some((h) => h.trim().toLowerCase() === v);
+}
+
 interface ColumnMapping {
   headerRowIndex: number;
   skuCol: number;
+  statusCol?: number;
+  inactiveHints?: string[];
 }
 
 function detectColumnHeuristically(matrix: unknown[][]): ColumnMapping | null {
@@ -180,9 +206,23 @@ function detectColumnHeuristically(matrix: unknown[][]): ColumnMapping | null {
       const h = normalizeHeader(cell);
       if (skuCol === -1 && SKU_HINTS.some((hint) => h.includes(hint))) skuCol = i;
     });
-    if (skuCol !== -1) return { headerRowIndex: r, skuCol };
+    if (skuCol !== -1) {
+      const statusCol = detectStatusColumnHeuristically(row, skuCol);
+      return { headerRowIndex: r, skuCol, ...(statusCol !== null ? { statusCol } : {}) };
+    }
   }
   return null;
+}
+
+/** Scans the same header row already found for the SKU column for a status/active header, skipping the SKU column itself. */
+function detectStatusColumnHeuristically(headerRow: unknown[], skuCol: number): number | null {
+  let statusCol = -1;
+  headerRow.forEach((cell, i) => {
+    if (i === skuCol) return;
+    const h = normalizeHeader(cell);
+    if (statusCol === -1 && STATUS_HINTS.some((hint) => h.includes(hint))) statusCol = i;
+  });
+  return statusCol === -1 ? null : statusCol;
 }
 
 const ColumnDetectSchema = z.object({
@@ -191,6 +231,8 @@ const ColumnDetectSchema = z.object({
       sheetName: z.string(),
       headerRowIndex: z.number().nullable(),
       skuColumnIndex: z.number().nullable(),
+      statusColumnIndex: z.number().nullable(),
+      inactiveValueHints: z.array(z.string()),
     })
   ),
 });
@@ -219,11 +261,15 @@ async function detectColumnWithAi(
       messages: [
         {
           role: "user",
-          content: `Identify the table structure in each sheet below (0-based row/column indices). Do NOT extract or reproduce any data values — only identify structure.
+          content: `Identify the table structure in each sheet below (0-based row/column indices). Do NOT extract or reproduce any data values — only identify structure, except for inactiveValueHints as noted below.
+
+A SKU is a short product/item identifier code (letters, numbers, dashes/underscores) — not a description, note, or free-text field. Use that to pick the right column even on messy or inconsistently formatted sheets.
 
 For each sheet return:
 - headerRowIndex: the row index containing column headers (null if none)
 - skuColumnIndex: the column index holding product/item SKUs (null if no such column exists in this sheet)
+- statusColumnIndex: the column index holding an active/status/enabled flag for each item (null if no such column exists)
+- inactiveValueHints: the distinct raw values you see in that status column (if any) that mean the item is inactive/discontinued/disabled (e.g. "Discontinued", "N", "No") — empty array if there's no status column or you're unsure
 
 ${preview}`,
         },
@@ -239,7 +285,12 @@ ${preview}`,
   const result: Record<string, ColumnMapping> = {};
   for (const s of parsed.sheets) {
     if (s.headerRowIndex === null || s.skuColumnIndex === null) continue;
-    result[s.sheetName] = { headerRowIndex: s.headerRowIndex, skuCol: s.skuColumnIndex };
+    result[s.sheetName] = {
+      headerRowIndex: s.headerRowIndex,
+      skuCol: s.skuColumnIndex,
+      ...(s.statusColumnIndex !== null ? { statusCol: s.statusColumnIndex } : {}),
+      ...(s.inactiveValueHints.length > 0 ? { inactiveHints: s.inactiveValueHints } : {}),
+    };
   }
   return Object.keys(result).length > 0 ? result : null;
 }
@@ -250,6 +301,7 @@ export interface DetectedSkuSheet {
   skuColumnLabel: string;
   source: "heuristic" | "ai";
   rowsFound: number;
+  inactiveExcluded: number;
 }
 
 function extractSkusFromSheet(opts: {
@@ -261,10 +313,11 @@ function extractSkusFromSheet(opts: {
   detected: DetectedSkuSheet[];
 }) {
   const { sheetName, matrix, mapping, source, found, detected } = opts;
-  const { headerRowIndex, skuCol } = mapping;
+  const { headerRowIndex, skuCol, statusCol, inactiveHints } = mapping;
   const headerRow = matrix[headerRowIndex] ?? [];
 
   let rowsFound = 0;
+  let inactiveExcluded = 0;
   for (let r = headerRowIndex + 1; r < matrix.length; r++) {
     const row = matrix[r];
     if (!row) continue;
@@ -272,6 +325,10 @@ function extractSkusFromSheet(opts: {
     if (raw === null || raw === undefined) continue;
     const sku = String(raw).trim();
     if (!sku) continue;
+    if (statusCol !== undefined && isInactive(row[statusCol], inactiveHints)) {
+      inactiveExcluded++;
+      continue;
+    }
     found.add(sku);
     rowsFound++;
   }
@@ -282,6 +339,7 @@ function extractSkusFromSheet(opts: {
     skuColumnLabel: String(headerRow[skuCol] ?? `column ${skuCol}`),
     source,
     rowsFound,
+    inactiveExcluded,
   });
 }
 

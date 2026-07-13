@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getSession } from "@/lib/session";
-import { getSkuDetail, MARKETPLACE_IDS, type MarketplaceCode } from "@/lib/amazon/sp-api";
+import { getSkuDetail, getSkuPricing, MARKETPLACE_IDS, type MarketplaceCode } from "@/lib/amazon/sp-api";
 
 export type PriceType = "your_price" | "sale_price";
 
@@ -132,6 +132,104 @@ export async function createPricePlan(input: {
     return { data: null, error: insertError.message };
   }
   return { data: data as PricePlan, error: null };
+}
+
+export async function createBulkPricePlans(input: {
+  skus: { sku: string; targetPrice: number }[];
+  marketplace: MarketplaceCode;
+  priceType: PriceType;
+  increment: number;
+}): Promise<{
+  data: { created: PricePlan[]; skipped: { sku: string; error: string }[] } | null;
+  error: string | null;
+}> {
+  const { session, error } = await requireStaff();
+  if (error) return { data: null, error };
+
+  const { skus, marketplace, priceType, increment } = input;
+  const label = priceType === "sale_price" ? "Sale Price" : "Your Price";
+
+  if (priceType !== "your_price" && priceType !== "sale_price") {
+    return { data: null, error: "Invalid price type" };
+  }
+  if (!Number.isFinite(increment) || increment <= 0) {
+    return { data: null, error: "Increment must be greater than 0" };
+  }
+  if (skus.length === 0) return { data: null, error: "No SKUs selected" };
+  if (skus.some((s) => !s.sku || !Number.isFinite(s.targetPrice))) {
+    return { data: null, error: "Every SKU needs a valid target price" };
+  }
+
+  const skuList = skus.map((s) => s.sku);
+  const pricing = await getSkuPricing(skuList, MARKETPLACE_IDS[marketplace]);
+  const pricingBySku = new Map(pricing.map((p) => [p.sku, p]));
+
+  const service = createServiceClient();
+
+  const { data: activeRows, error: activeError } = await service
+    .from("price_change_plans")
+    .select("sku")
+    .in("sku", skuList)
+    .eq("marketplace", marketplace)
+    .eq("price_type", priceType)
+    .eq("status", "active");
+  if (activeError) return { data: null, error: activeError.message };
+  const alreadyActive = new Set((activeRows ?? []).map((r) => r.sku as string));
+
+  const skipped: { sku: string; error: string }[] = [];
+  const rows: Record<string, unknown>[] = [];
+
+  for (const { sku, targetPrice } of skus) {
+    if (alreadyActive.has(sku)) {
+      skipped.push({ sku, error: `An active ${label} plan already exists for this SKU — cancel it first.` });
+      continue;
+    }
+
+    const detail = pricingBySku.get(sku);
+    const startPrice =
+      priceType === "sale_price" ? detail?.discountedPrice ?? detail?.salesPrice ?? null : detail?.salesPrice ?? null;
+    if (startPrice === null || startPrice === undefined) {
+      skipped.push({
+        sku,
+        error: detail?.error ?? `No current ${label.toLowerCase()} on Amazon — a plan can't be created for this SKU`,
+      });
+      continue;
+    }
+    if (targetPrice === startPrice) {
+      skipped.push({ sku, error: "Target price must differ from current price" });
+      continue;
+    }
+
+    rows.push({
+      sku,
+      marketplace,
+      price_type: priceType,
+      start_price: startPrice,
+      current_price: startPrice,
+      target_price: targetPrice,
+      increment,
+      direction: targetPrice > startPrice ? "increase" : "decrease",
+      created_by: session!.username,
+    });
+  }
+
+  if (rows.length === 0) return { data: { created: [], skipped }, error: null };
+
+  const { data, error: insertError } = await service
+    .from("price_change_plans")
+    .insert(rows)
+    .select(PLAN_COLUMNS);
+
+  if (insertError) {
+    // The partial unique index (sku, marketplace, price_type where status='active') can still
+    // reject the whole batch on a rare concurrent create that slipped past the pre-check above.
+    if (insertError.code === "23505") {
+      return { data: null, error: `One or more selected SKUs already have an active ${label} plan — refresh and try again.` };
+    }
+    return { data: null, error: insertError.message };
+  }
+
+  return { data: { created: (data ?? []) as PricePlan[], skipped }, error: null };
 }
 
 export async function updatePricePlan(

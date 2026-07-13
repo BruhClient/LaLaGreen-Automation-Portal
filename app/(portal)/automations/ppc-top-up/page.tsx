@@ -303,12 +303,11 @@ export default function PpcTopUpPage() {
                       <CardAction className="col-start-1! row-start-3! row-span-1! justify-self-stretch! flex flex-wrap items-center gap-2 sm:col-start-2! sm:row-start-1! sm:row-span-2! sm:justify-self-end!">
                         <button
                           onClick={() => setShowAiImport(true)}
-                          disabled
-                          title="Temporarily disabled"
+                          disabled={isPending}
                           className="flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-background"
                         >
                           <Sparkles className="size-3.5" />
-                          Use AI
+                          Upload Excel
                         </button>
                         <select
                           value={country.reset_time}
