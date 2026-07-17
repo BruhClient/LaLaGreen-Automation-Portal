@@ -46,6 +46,21 @@ import {
 } from "@/lib/actions/ppc-manual-topups";
 import { analyzeScheduleImport, type DetectedSheet } from "@/lib/actions/ppc-ai-import";
 import {
+  getAcosTopupConfig,
+  updateAcosTopupSettings,
+  updateAcosTopupBands,
+  getAcosTopupLog,
+  type AcosTopupSettings,
+  type AcosTopupBand,
+  type AcosTopupLogEntry,
+} from "@/lib/actions/ppc-acos-topup";
+import {
+  ACOS_BANDS,
+  ACOS_METRICS,
+  type AcosBandKey,
+  type AcosMetric,
+} from "@/lib/ppc-acos-topup-constants";
+import {
   CANONICAL_SLOTS,
   computeRunningTotals,
   computeProjectedRows,
@@ -424,6 +439,8 @@ export default function PpcTopUpPage() {
                     </CardFooter>
                 </Card>
 
+                <AcosTopupCard countryCode={country.country_code} />
+
                 <AiImportDialog
                   open={showAiImport}
                   onOpenChange={setShowAiImport}
@@ -787,6 +804,309 @@ function LiveProjectionCard({
           </table>
         </div>
       </CardContent>
+    </Card>
+  );
+}
+
+function AcosTopupCard({ countryCode }: { countryCode: string }) {
+  const [settings, setSettings] = useState<AcosTopupSettings | null>(null);
+  const [bands, setBands] = useState<AcosTopupBand[]>([]);
+  const [log, setLog] = useState<AcosTopupLogEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [logLoading, setLogLoading] = useState(true);
+  const [showLog, setShowLog] = useState(false);
+  const [dirtyCaps, setDirtyCaps] = useState<{ maxDaily?: string; maxCount?: string }>({});
+  const [dirtyBands, setDirtyBands] = useState<Record<string, string>>({});
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const [, startLogTransition] = useTransition();
+
+  function reload() {
+    startTransition(async () => {
+      const { data, error } = await getAcosTopupConfig();
+      if (error) setError(error);
+      else if (data) {
+        setSettings(data.settings.find((s) => s.country_code === countryCode) ?? null);
+        setBands(data.bands.filter((b) => b.country_code === countryCode));
+        setError(null);
+      }
+      setIsLoading(false);
+    });
+  }
+
+  function reloadLog() {
+    startLogTransition(async () => {
+      setLogLoading(true);
+      const { data, error } = await getAcosTopupLog(countryCode);
+      if (error) setError(error);
+      else setLog(data ?? []);
+      setLogLoading(false);
+    });
+  }
+
+  useEffect(() => {
+    reload();
+    reloadLog();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [countryCode]);
+
+  function toggleEnabled() {
+    if (!settings) return;
+    startTransition(async () => {
+      const { error } = await updateAcosTopupSettings(countryCode, { enabled: !settings.enabled });
+      if (error) setError(error);
+      else reload();
+    });
+  }
+
+  function changeMetric(metric: AcosMetric) {
+    startTransition(async () => {
+      const { error } = await updateAcosTopupSettings(countryCode, { acosMetric: metric });
+      if (error) setError(error);
+      else reload();
+    });
+  }
+
+  function discard() {
+    setDirtyCaps({});
+    setDirtyBands({});
+  }
+
+  function save() {
+    startTransition(async () => {
+      if (dirtyCaps.maxDaily !== undefined || dirtyCaps.maxCount !== undefined) {
+        const { error } = await updateAcosTopupSettings(countryCode, {
+          maxDailyTopupPerCampaign:
+            dirtyCaps.maxDaily !== undefined ? toNumericAmount(dirtyCaps.maxDaily) : undefined,
+          maxTopupsPerCampaignPerDay:
+            dirtyCaps.maxCount !== undefined ? Math.round(toNumericAmount(dirtyCaps.maxCount)) : undefined,
+        });
+        if (error) {
+          setError(error);
+          return;
+        }
+      }
+      const bandChanges = Object.entries(dirtyBands).map(([bandKey, raw]) => ({
+        bandKey: bandKey as AcosBandKey,
+        topupAmount: toNumericAmount(raw),
+      }));
+      if (bandChanges.length > 0) {
+        const { error } = await updateAcosTopupBands(countryCode, bandChanges);
+        if (error) {
+          setError(error);
+          return;
+        }
+      }
+      setDirtyCaps({});
+      setDirtyBands({});
+      setError(null);
+      reload();
+    });
+  }
+
+  const dirtyCount =
+    Object.keys(dirtyBands).length +
+    (dirtyCaps.maxDaily !== undefined ? 1 : 0) +
+    (dirtyCaps.maxCount !== undefined ? 1 : 0);
+
+  return (
+    <Card>
+      <CardHeader className="grid-cols-1! sm:grid-cols-[1fr_auto]!">
+        <CardTitle>ACOS Top-Up Rules</CardTitle>
+        <CardDescription>Per-campaign top-ups for OOB campaigns, gated by ACOS</CardDescription>
+        <CardAction className="col-start-1! row-start-3! row-span-1! justify-self-stretch! flex flex-wrap items-center gap-3 sm:col-start-2! sm:row-start-1! sm:row-span-2! sm:justify-self-end!">
+          {settings && (
+            <>
+              <select
+                value={settings.acos_metric}
+                disabled={isPending}
+                onChange={(e) => changeMetric(e.target.value as AcosMetric)}
+                className="rounded-md border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                title="ACOS metric"
+              >
+                {ACOS_METRICS.map((m) => (
+                  <option key={m.key} value={m.key}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+              <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <Switch checked={settings.enabled} onCheckedChange={toggleEnabled} disabled={isPending} />
+                {settings.enabled ? "Enabled" : "Disabled"}
+              </label>
+            </>
+          )}
+        </CardAction>
+      </CardHeader>
+
+      <CardContent>
+        {error && (
+          <div className="mb-3 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="flex flex-wrap gap-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-14 w-24" />
+            ))}
+          </div>
+        ) : !settings ? (
+          <div className="rounded-md border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+            No ACOS top-up settings configured for this marketplace yet.
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-end gap-3">
+            {ACOS_BANDS.map((band) => {
+              const current = bands.find((b) => b.band_key === band.key)?.topup_amount ?? 0;
+              const rawDirty = dirtyBands[band.key];
+              const isDirty = rawDirty !== undefined;
+              const displayValue = rawDirty ?? String(current);
+              return (
+                <div key={band.key}>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                    {band.label}
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={displayValue}
+                    onChange={(e) => setDirtyBands((prev) => ({ ...prev, [band.key]: e.target.value }))}
+                    className={`w-24 rounded-md border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring ${
+                      isDirty ? "border-primary" : "border-input"
+                    }`}
+                  />
+                </div>
+              );
+            })}
+
+            <div className="mx-1 h-9 w-px self-end bg-border" />
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground" title="Max daily top-up per campaign ($)">
+                Max $/day
+              </label>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={dirtyCaps.maxDaily ?? String(settings.max_daily_topup_per_campaign)}
+                onChange={(e) => setDirtyCaps((prev) => ({ ...prev, maxDaily: e.target.value }))}
+                className={`w-24 rounded-md border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring ${
+                  dirtyCaps.maxDaily !== undefined ? "border-primary" : "border-input"
+                }`}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground" title="Max top-ups per campaign per day">
+                Max/day
+              </label>
+              <input
+                type="number"
+                min={1}
+                step="1"
+                value={dirtyCaps.maxCount ?? String(settings.max_topups_per_campaign_per_day)}
+                onChange={(e) => setDirtyCaps((prev) => ({ ...prev, maxCount: e.target.value }))}
+                className={`w-20 rounded-md border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring ${
+                  dirtyCaps.maxCount !== undefined ? "border-primary" : "border-input"
+                }`}
+              />
+            </div>
+          </div>
+        )}
+      </CardContent>
+
+      {settings && (
+        <CardFooter className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <button
+            onClick={() => setShowLog((v) => !v)}
+            className="text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          >
+            {showLog ? "Hide" : "Show"} recent top-ups{log.length > 0 ? ` (${log.length})` : ""}
+          </button>
+          <div className="flex items-center gap-3">
+            {dirtyCount > 0 && (
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                {dirtyCount} unsaved change{dirtyCount === 1 ? "" : "s"}
+              </span>
+            )}
+            <div className="flex gap-2">
+              <button
+                onClick={discard}
+                disabled={isPending || dirtyCount === 0}
+                className="rounded-md px-3 py-1.5 text-sm font-medium hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Discard
+              </button>
+              <button
+                onClick={save}
+                disabled={isPending || dirtyCount === 0}
+                className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isPending ? "Saving…" : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </CardFooter>
+      )}
+
+      {showLog && (
+        <CardContent className="border-t border-border pt-4">
+          <div className="overflow-x-auto rounded-md border border-border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/50">
+                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">Applied</th>
+                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">Campaign</th>
+                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">ACOS</th>
+                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">Band</th>
+                  <th className="px-3 py-2 text-right font-medium text-muted-foreground">Top-up</th>
+                  <th className="px-3 py-2 text-right font-medium text-muted-foreground">Budget</th>
+                </tr>
+              </thead>
+              <tbody>
+                {logLoading ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <tr key={i} className="border-b border-border last:border-0">
+                      <td className="px-3 py-2" colSpan={6}>
+                        <Skeleton className="h-4 w-full" />
+                      </td>
+                    </tr>
+                  ))
+                ) : log.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">
+                      No automated top-ups yet
+                    </td>
+                  </tr>
+                ) : (
+                  log.map((l) => (
+                    <tr key={l.id} className="border-b border-border last:border-0">
+                      <td className="px-3 py-2 text-muted-foreground">
+                        {new Date(l.applied_at).toLocaleString()}
+                      </td>
+                      <td className="px-3 py-2">{l.campaign_name}</td>
+                      <td className="px-3 py-2 text-muted-foreground">
+                        {ACOS_METRICS.find((m) => m.key === l.acos_metric)?.label ?? l.acos_metric}:{" "}
+                        {Number(l.acos_value).toFixed(1)}%
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground">
+                        {ACOS_BANDS.find((b) => b.key === l.band_key)?.label ?? l.band_key}
+                      </td>
+                      <td className="px-3 py-2 text-right">${Number(l.topup_amount).toFixed(2)}</td>
+                      <td className="px-3 py-2 text-right text-muted-foreground">
+                        ${Number(l.previous_budget).toFixed(2)} → ${Number(l.new_budget).toFixed(2)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      )}
     </Card>
   );
 }

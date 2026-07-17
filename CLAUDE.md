@@ -134,6 +134,55 @@ Project ID: `fuynizhfhfnvbdzwihgp`
 | `role` | `text` | `"admin"` or `"user"` |
 | `created_at` | `timestamptz` | Auto |
 
+### PPC ACOS Top-Up tables
+
+Extends the PPC Top Up automation with **per-campaign** budget top-ups, separate from the
+country-level daily cap schedule (`ppc_topup_countries` / `ppc_topup_schedule` above). Every
+10 minutes, an external n8n/Python process checks all out-of-budget (OOB) campaigns, computes
+each one's ACOS (per the marketplace's configured `acos_metric`), matches it to a band in
+`ppc_acos_topup_bands`, and — if the marketplace is enabled and the per-campaign daily caps in
+`ppc_acos_topup_settings` haven't been hit (checked against `ppc_acos_topup_log`) — raises that
+campaign's budget by the band's `topup_amount` via the Ads API, then writes a row to
+`ppc_acos_topup_log`. This portal only owns the configuration and the audit log view; it does
+not call Amazon directly for this feature.
+
+**`ppc_acos_topup_settings`** — one row per `country_code`:
+
+| Column | Type | Notes |
+|---|---|---|
+| `country_code` | `text` | PK, matches `ppc_topup_countries.country_code` |
+| `enabled` | `bool` | Default `false` |
+| `acos_metric` | `text` | `"14d"` or `"today"` — applies to all 4 bands below |
+| `max_daily_topup_per_campaign` | `numeric` | $ cap per campaign per day |
+| `max_topups_per_campaign_per_day` | `int` | Count cap per campaign per day |
+| `updated_at` | `timestamptz` | Auto |
+
+**`ppc_acos_topup_bands`** — 4 fixed rows per `country_code` (`0-10`, `10-20`, `20-30`, `30-plus`); only `topup_amount` is staff-editable:
+
+| Column | Type | Notes |
+|---|---|---|
+| `country_code` | `text` | Composite PK with `band_key` |
+| `band_key` | `text` | `"0-10"` \| `"10-20"` \| `"20-30"` \| `"30-plus"` |
+| `topup_amount` | `numeric` | Fixed $ top-up when a campaign's ACOS falls in this band |
+| `updated_at` | `timestamptz` | Auto |
+
+**`ppc_acos_topup_log`** — audit trail, written by n8n after each applied top-up, read-only from the portal:
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `uuid` | PK |
+| `country_code` | `text` | |
+| `campaign_id` | `text` | Amazon campaign id |
+| `campaign_name` | `text` | Denormalized for display |
+| `acos_metric` | `text` | `"14d"` or `"today"` |
+| `acos_value` | `numeric` | ACOS at the time of the check |
+| `band_key` | `text` | Which band matched |
+| `topup_amount` | `numeric` | $ applied |
+| `previous_budget` | `numeric` | |
+| `new_budget` | `numeric` | |
+| `applied_at` | `timestamptz` | |
+| `created_at` | `timestamptz` | Auto |
+
 ### Supabase clients
 
 ```typescript
