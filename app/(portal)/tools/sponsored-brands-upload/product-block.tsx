@@ -38,6 +38,8 @@ export type Block = {
   campaignName: string;
   startDate: string;
   asins: string[];
+  landingPageMode: "default" | "url";
+  landingPageUrl: string;
   videoSource: "saved" | "manual";
   videoAssetId: string;
   manualVideoAssetId: string;
@@ -75,6 +77,8 @@ export function newBlock(brandId = ""): Block {
     campaignName: "",
     startDate: new Date().toISOString().slice(0, 10),
     asins: [""],
+    landingPageMode: "default",
+    landingPageUrl: "",
     videoSource: "saved",
     videoAssetId: "",
     manualVideoAssetId: "",
@@ -304,6 +308,38 @@ export default function ProductBlock({
               </p>
             )}
           </div>
+
+          {/* Landing page */}
+          {block.adFormat === "productCollection" && (
+            <div>
+              <Label className={labelClass}>Landing page</Label>
+              <SegmentedControl
+                className="mb-2"
+                value={block.landingPageMode}
+                onValueChange={(v) => set({ landingPageMode: v })}
+                options={[
+                  { value: "default", label: "Product list" },
+                  { value: "url", label: "Custom URL" },
+                ]}
+              />
+              {block.landingPageMode === "url" ? (
+                <>
+                  <Input
+                    placeholder="https://www.amazon.com/stores/page/…"
+                    value={block.landingPageUrl}
+                    onChange={(e) => set({ landingPageUrl: e.target.value })}
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Overrides the brand&apos;s Store Page URL for this ad only.
+                  </p>
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Uses the brand&apos;s Store Page URL if one is set, otherwise links to the ASINs above.
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Video asset */}
           {block.adFormat === "video" && (

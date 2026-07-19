@@ -57,6 +57,7 @@ export type CampaignInput =
   | (BaseCampaignInput & {
       adFormat: "productCollection";
       asins: string[]; // 3-10 ASINs; Amazon auto-generates the creative (no logo/image/headline)
+      landingPageUrl?: string;
     });
 
 const SHEET_NAME: Record<Country, string> = {
@@ -134,6 +135,7 @@ export function buildSponsoredBrandsBulk(country: Country, campaigns: CampaignIn
       // productCollection: Amazon auto-generates the creative from the ASINs
       // (no logo/custom image/headline as of the Jan 2026 format overhaul).
       campaignRow[29] = campaign.asins.join(","); // Creative ASINs
+      if (campaign.landingPageUrl) campaignRow[22] = campaign.landingPageUrl; // Landing page URL
     }
     rows.push(campaignRow);
 

@@ -13,7 +13,7 @@ export type IncomingCampaign = {
   matchTypes?: ("exact" | "phrase" | "broad")[];
 } & (
   | { adFormat: "video"; asin: string; videoAssetId: string }
-  | { adFormat: "productCollection"; asins: string[] }
+  | { adFormat: "productCollection"; asins: string[]; landingPageUrl?: string }
 );
 
 export interface BrandRow {

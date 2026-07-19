@@ -78,6 +78,7 @@ export async function POST(req: NextRequest) {
 
   const toUpload: UploadCampaign[] = campaigns.map((c) => {
     const brand = brandById.get(c.brandId)!;
+    const landingPageUrl = c.adFormat === "productCollection" ? c.landingPageUrl : undefined;
     const base = {
       campaignName: c.campaignName,
       bid: c.bid,
@@ -89,7 +90,7 @@ export async function POST(req: NextRequest) {
       brandEntityId: brand.brand_entity_id,
       brandName: brand.brand_name,
       brandLogoAssetId: brand.brand_logo_asset_id,
-      storePageUrl: brand.store_page_url,
+      storePageUrl: landingPageUrl || brand.store_page_url,
     };
     return c.adFormat === "video"
       ? { ...base, adFormat: "video" as const, asin: c.asin, videoAssetId: c.videoAssetId }

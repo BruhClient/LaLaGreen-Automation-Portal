@@ -9,6 +9,7 @@ export type Campaign =
       campaignName: string;
       adFormat: "productCollection";
       asins: string[];
+      landingPageUrl?: string;
       bid: number;
       budget: number | undefined;
       startDate: string;
@@ -217,6 +218,12 @@ export function buildCampaigns(
         error: `${label}: Product Collection needs 3-10 ASINs (has ${cleanAsins.length}).`,
       };
     }
+    if (block.adFormat === "productCollection" && block.landingPageMode === "url" && !block.landingPageUrl.trim()) {
+      return {
+        payload: [],
+        error: `${label}: enter a landing page URL, or switch back to Product list.`,
+      };
+    }
 
     let videoAssetId = "";
     if (block.adFormat === "video") {
@@ -289,6 +296,8 @@ export function buildCampaigns(
           campaignName: name,
           adFormat: "productCollection",
           asins: cleanAsins,
+          landingPageUrl:
+            block.landingPageMode === "url" ? block.landingPageUrl.trim() : undefined,
           bid: bids[i],
           budget: budgetOverride,
           startDate: block.startDate,
