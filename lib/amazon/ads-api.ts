@@ -47,8 +47,16 @@ async function listProfiles(): Promise<AdsProfile[]> {
       "Amazon-Advertising-API-ClientId": process.env.ADS_CLIENT_ID!,
     },
   });
-  if (!res.ok) throw new Error(`Failed to list advertising profiles (${res.status})`);
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    console.error(`[ads-api] listProfiles failed (${res.status})${text ? `: ${text}` : ""}`);
+    throw new Error(`Failed to list advertising profiles (${res.status})`);
+  }
   profilesCache = (await res.json()) as AdsProfile[];
+  console.log(
+    `[ads-api] listProfiles -> ${profilesCache.length} profile(s):`,
+    profilesCache.map((p) => ({ profileId: p.profileId, countryCode: p.countryCode, accountType: p.accountInfo?.type }))
+  );
   return profilesCache;
 }
 
@@ -66,16 +74,24 @@ export async function getProfileId(country: string): Promise<string> {
     );
   }
   const override = process.env[`ADS_PROFILE_ID_${country}`];
-  if (override) return override;
+  if (override) {
+    console.log(`[ads-api] getProfileId(${country}) -> using ADS_PROFILE_ID_${country} override: ${override}`);
+    return override;
+  }
 
   const matches = (await listProfiles()).filter((p) => p.countryCode === country);
+  console.log(`[ads-api] getProfileId(${country}) -> ${matches.length} matching profile(s)`);
   if (!matches.length) {
     throw new Error(
       `No ${country} advertising profile found on this Ads account. Check the account's marketplace access, or set ADS_PROFILE_ID_${country}.`
     );
   }
   const seller = matches.find((p) => p.accountInfo?.type === "seller");
-  return String((seller ?? matches[0]).profileId);
+  const chosen = seller ?? matches[0];
+  console.log(
+    `[ads-api] getProfileId(${country}) -> chose profileId ${chosen.profileId} (accountType: ${chosen.accountInfo?.type ?? "unknown"})`
+  );
+  return String(chosen.profileId);
 }
 
 let tokenCache: { accessToken: string; expiresAt: number } | null = null;
@@ -86,6 +102,7 @@ async function getAccessToken(): Promise<string> {
   if (tokenCache && tokenCache.expiresAt - 60_000 > now) return tokenCache.accessToken;
   if (refreshInFlight) return refreshInFlight;
 
+  console.log("[ads-api] refreshing LWA access token...");
   refreshInFlight = (async () => {
     const res = await fetch(LWA_TOKEN_URL, {
       method: "POST",
@@ -97,9 +114,14 @@ async function getAccessToken(): Promise<string> {
         client_secret: process.env.ADS_CLIENT_SECRET!,
       }),
     });
-    if (!res.ok) throw new Error(`Amazon Ads token refresh failed (${res.status})`);
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      console.error(`[ads-api] token refresh failed (${res.status})${text ? `: ${text}` : ""}`);
+      throw new Error(`Amazon Ads token refresh failed (${res.status})${text ? `: ${text}` : ""}`);
+    }
     const json = await res.json();
     tokenCache = { accessToken: json.access_token, expiresAt: Date.now() + json.expires_in * 1000 };
+    console.log(`[ads-api] token refresh ok, expires in ${json.expires_in}s`);
     return tokenCache.accessToken;
   })();
 
@@ -143,15 +165,24 @@ async function adsPost<T>(
   let lastError: Error = new Error(`Ads API ${path} failed`);
 
   for (let attempt = 0; attempt < 3; attempt++) {
+    console.log(
+      `[ads-api] POST ${path} (attempt ${attempt + 1}, profileId=${profileId}, contentType=${media.contentType})`,
+      JSON.stringify(body)
+    );
     const accessToken = await getAccessToken();
     const res = await fetch(url, {
       method: "POST",
       headers: adsHeaders(accessToken, profileId, media),
       body: JSON.stringify(body),
     });
-    if (res.ok) return res.json() as Promise<T>;
+    if (res.ok) {
+      const json = await res.json();
+      console.log(`[ads-api] POST ${path} -> ${res.status}`, JSON.stringify(json));
+      return json as T;
+    }
 
     const text = await res.text().catch(() => "");
+    console.error(`[ads-api] POST ${path} -> ${res.status}${text ? `: ${text}` : ""}`);
     lastError = new Error(`Ads API ${path} failed (${res.status})${text ? `: ${text}` : ""}`);
     if (!RETRYABLE_STATUSES.has(res.status)) throw lastError;
     await sleep(1000 * 2 ** attempt);
@@ -170,6 +201,7 @@ function firstResult<TSuccess>(res: SbBatchResponse<TSuccess>, resource: string)
   const success = bucket?.success ?? [];
   if (success.length > 0) return success[0];
   const errors = bucket?.error ?? [];
+  console.error(`[ads-api] firstResult(${resource}) -> no success entries, errors:`, JSON.stringify(errors));
   throw new Error(
     errors.length ? `Amazon rejected the ${resource}: ${JSON.stringify(errors[0])}` : `No ${resource} created`
   );
@@ -372,6 +404,7 @@ export async function uploadSbCampaign(
   c: UploadCampaign
 ): Promise<UploadResult> {
   let campaignId: string | undefined;
+  console.log(`[ads-api] uploadSbCampaign("${c.campaignName}") -> start (adFormat=${c.adFormat})`);
   try {
     campaignId = await createSbCampaign(profileId, {
       name: c.campaignName,
@@ -379,12 +412,14 @@ export async function uploadSbCampaign(
       startDate: c.startDate,
       brandEntityId: c.brandEntityId,
     });
+    console.log(`[ads-api] uploadSbCampaign("${c.campaignName}") -> campaignId=${campaignId}`);
 
     const adGroupId = await createSbAdGroup(profileId, {
       name: `${c.campaignName} - Ad Group`,
       campaignId,
       bid: c.bid,
     });
+    console.log(`[ads-api] uploadSbCampaign("${c.campaignName}") -> adGroupId=${adGroupId}`);
 
     if (c.adFormat === "video") {
       await createSbVideoAd(profileId, {
@@ -403,6 +438,7 @@ export async function uploadSbCampaign(
         storePageUrl: c.storePageUrl,
       });
     }
+    console.log(`[ads-api] uploadSbCampaign("${c.campaignName}") -> ad created`);
 
     await createSbKeywords(profileId, {
       campaignId,
@@ -411,6 +447,7 @@ export async function uploadSbCampaign(
       matchTypes: c.matchTypes,
       bid: c.bid,
     });
+    console.log(`[ads-api] uploadSbCampaign("${c.campaignName}") -> keywords created`);
 
     if (c.negativeKeywords.length) {
       try {
@@ -419,13 +456,16 @@ export async function uploadSbCampaign(
           adGroupId,
           keywords: c.negativeKeywords,
         });
-      } catch {
+      } catch (err) {
         // Negatives are best-effort — the campaign itself is already live.
+        console.error(`[ads-api] uploadSbCampaign("${c.campaignName}") -> negative keywords failed (ignored):`, err);
       }
     }
 
+    console.log(`[ads-api] uploadSbCampaign("${c.campaignName}") -> done, ok`);
     return { campaignName: c.campaignName, ok: true, campaignId };
   } catch (err) {
+    console.error(`[ads-api] uploadSbCampaign("${c.campaignName}") -> failed (campaignId=${campaignId}):`, err);
     return {
       campaignName: c.campaignName,
       ok: false,

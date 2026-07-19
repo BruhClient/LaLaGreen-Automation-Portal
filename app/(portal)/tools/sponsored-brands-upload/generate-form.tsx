@@ -81,6 +81,10 @@ export default function GenerateForm({
   const [uploading, setUploading] = useState(false);
   const [confirmUpload, setConfirmUpload] = useState(false);
   const [uploadResults, setUploadResults] = useState<UploadResponse | null>(null);
+  // Optional cap so you can test the Ads API with a couple of campaigns instead
+  // of uploading every configured ad. Upload-only — the bulk file always
+  // contains everything.
+  const [testLimit, setTestLimit] = useState("");
 
   // Build dialog state — a null draft means the dialog is closed.
   const [draft, setDraft] = useState<Block | null>(null);
@@ -174,6 +178,13 @@ export default function GenerateForm({
   // preview and its first validation error (including deleted-asset references).
   const preview = buildCampaigns(blocks, themes, brands, assets);
 
+  // How many campaigns an actual upload will send, after the optional test cap.
+  const parsedLimit = parseInt(testLimit, 10);
+  const uploadCount =
+    testLimit.trim() && parsedLimit > 0
+      ? Math.min(parsedLimit, preview.payload.length)
+      : preview.payload.length;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -231,12 +242,15 @@ export default function GenerateForm({
       return;
     }
 
+    const limit = parseInt(testLimit, 10);
+    const toSend = testLimit.trim() && limit > 0 ? payload.slice(0, limit) : payload;
+
     setUploading(true);
     try {
       const res = await fetch("/api/tools/sponsored-brands-upload/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ campaigns: payload }),
+        body: JSON.stringify({ campaigns: toSend }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -340,6 +354,12 @@ export default function GenerateForm({
               campaign{totalCampaigns === 1 ? "" : "s"} across
               <Badge variant="secondary">{products.length}</Badge>
               ad{products.length === 1 ? "" : "s"} in one file.
+              {uploadCount < totalCampaigns && (
+                <span className="w-full text-amber-600 dark:text-amber-400">
+                  Test limit active — &quot;Upload to Amazon&quot; will only send the first{" "}
+                  {uploadCount}.
+                </span>
+              )}
             </div>
 
             {/* Live preview — identical to what the download will contain. */}
@@ -399,6 +419,24 @@ export default function GenerateForm({
               />
               <p className="mt-1 text-xs text-muted-foreground">
                 Leave blank to use the default. &quot;.xlsx&quot; is added automatically.
+              </p>
+            </div>
+
+            <div className="rounded-lg border border-border p-3">
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                Test limit — upload only (optional)
+              </label>
+              <Input
+                type="number"
+                min={1}
+                placeholder="e.g. 2 — leave blank to upload all"
+                className="max-w-xs"
+                value={testLimit}
+                onChange={(e) => setTestLimit(e.target.value)}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Uploads only the first N campaigns from the list above — handy for testing
+                without creating all {totalCampaigns}. Doesn&apos;t affect the bulk file download.
               </p>
             </div>
 
@@ -500,8 +538,14 @@ export default function GenerateForm({
       <AlertDialog open={confirmUpload} onOpenChange={(o) => !o && setConfirmUpload(false)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Upload {totalCampaigns} campaign{totalCampaigns === 1 ? "" : "s"} to Amazon?</AlertDialogTitle>
+            <AlertDialogTitle>Upload {uploadCount} campaign{uploadCount === 1 ? "" : "s"} to Amazon?</AlertDialogTitle>
             <AlertDialogDescription>
+              {uploadCount < totalCampaigns && (
+                <>
+                  Test limit active — only the first {uploadCount} of {totalCampaigns} campaigns will
+                  be sent.{" "}
+                </>
+              )}
               This creates live, <span className="font-medium text-foreground">enabled</span>{" "}
               Sponsored Brands campaigns in the{" "}
               <span className="font-medium text-foreground">{singleCountry}</span> marketplace via

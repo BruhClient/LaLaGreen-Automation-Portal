@@ -66,11 +66,15 @@ export async function POST(req: NextRequest) {
   try {
     profileId = await getProfileId(country);
   } catch (err) {
+    console.error(`[ads-api] upload route: getProfileId(${country}) failed:`, err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Advertising profile not configured" },
       { status: 400 }
     );
   }
+  console.log(
+    `[ads-api] upload route: country=${country} profileId=${profileId} campaigns=${campaigns.length}`
+  );
 
   const toUpload: UploadCampaign[] = campaigns.map((c) => {
     const brand = brandById.get(c.brandId)!;
@@ -100,5 +104,6 @@ export async function POST(req: NextRequest) {
   }
 
   const created = results.filter((r) => r.ok).length;
+  console.log(`[ads-api] upload route: done, created=${created} failed=${results.length - created}`);
   return NextResponse.json({ created, failed: results.length - created, results });
 }
